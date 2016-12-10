@@ -117,13 +117,29 @@
 	}
 
 	function api_attach_list($type) {
+		if(api_user() === false) 
+			return false;
+
 		logger('api_user: ' . api_user());
-		json_return_and_die(attach_list_files(api_user(),get_observer_hash(),'','','','created asc'));
+		$hash     = ((array_key_exists('filehash',$_REQUEST)) ? $_REQUEST['filehash'] : '');
+		$filename = ((array_key_exists('filename',$_REQUEST)) ? $_REQUEST['filename'] : '');
+		$filetype = ((array_key_exists('filetype',$_REQUEST)) ? $_REQUEST['filetype'] : '');
+		$start    = ((array_key_exists('start',$_REQUEST))    ? intval($_REQUEST['start'])   : 0);
+		$records  = ((array_key_exists('records',$_REQUEST))  ? intval($_REQUEST['records']) : 0);
+
+		$x = attach_list_files(api_user(),get_observer_hash(),$hash,$filename,$filetype,'created asc',$start,$records);
+		if($start || $records) {
+			$x['start'] = $start;
+			$x['records'] = count($x['results']);
+		}
+
+		json_return_and_die($x);
 	}
 
 
 	function api_file_meta($type) {
-		if (api_user()===false) return false;
+		if(api_user() === false)
+			return false;
 		if(! $_REQUEST['file_id']) return false;
 		$r = q("select * from attach where uid = %d and hash = '%s' limit 1",
 			intval(api_user()),
@@ -140,14 +156,15 @@
 
 
 	function api_file_data($type) {
-		if (api_user()===false) return false;
+		if(api_user() === false)
+			return false;
 		if(! $_REQUEST['file_id']) return false;
 		$start = (($_REQUEST['start']) ? intval($_REQUEST['start']) : 0);
 		$length = (($_REQUEST['length']) ? intval($_REQUEST['length']) : 0);
 
-		$r = q("select * from attach where uid = %d and hash = '%s' limit 1",
+		$r = q("select * from attach where uid = %d and hash like '%s' limit 1",
 			intval(api_user()),
-			dbesc($_REQUEST['file_id'])
+			dbesc($_REQUEST['file_id'] . '%')
 		);
 		if($r) {
 			$ptr = $r[0];
@@ -181,8 +198,10 @@
 
 
 	function api_file_export($type) {
-		if (api_user()===false) return false;
-		if(! $_REQUEST['file_id']) return false;
+		if(api_user() === false)
+			return false;
+		if(! $_REQUEST['file_id'])
+			return false;
 
 		$ret = attach_export_data(api_user(),$_REQUEST['file_id']);
 		if($ret) {
@@ -193,7 +212,8 @@
 
 
 	function api_file_detail($type) {
-		if (api_user()===false) return false;
+		if(api_user() === false)
+			return false;
 		if(! $_REQUEST['file_id']) return false;
 		$r = q("select * from attach where uid = %d and hash = '%s' limit 1",
 			intval(api_user()),
@@ -216,16 +236,21 @@
 
 
 	function api_albums($type) {
+		if(api_user() === false)
+			return false;
 		json_return_and_die(photos_albums_list(App::get_channel(),App::get_observer()));
 	}
 
 	function api_photos($type) {
+		if(api_user() === false)
+			return false;
 		$album = $_REQUEST['album'];
 		json_return_and_die(photos_list_photos(App::get_channel(),App::get_observer(),$album));
 	}
 
 	function api_photo_detail($type) {
-		if (api_user()===false) return false;
+		if(api_user() === false)
+			return false;
 		if(! $_REQUEST['photo_id']) return false;
 		$scale = ((array_key_exists('scale',$_REQUEST)) ? intval($_REQUEST['scale']) : 0);
 		$r = q("select * from photo where uid = %d and resource_id = '%s' and imgscale = %d limit 1",
@@ -304,8 +329,6 @@
 
 
 	function api_red_xchan($type) {
-		logger('api_xchan');
-
 		if(api_user() === false)
 			return false;
 		logger('api_xchan');
