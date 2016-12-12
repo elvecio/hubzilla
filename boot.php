@@ -48,7 +48,7 @@ require_once('include/zid.php');
 
 
 define ( 'PLATFORM_NAME',           'hubzilla' );
-define ( 'STD_VERSION',             '1.15.2' );
+define ( 'STD_VERSION',             '2.1' );
 define ( 'ZOT_REVISION',            '1.2' );
 
 define ( 'DB_UPDATE_VERSION',       1185  );
@@ -403,6 +403,7 @@ define ( 'NOTIFY_PROFILE',  0x0040 );
 define ( 'NOTIFY_TAGSELF',  0x0080 );
 define ( 'NOTIFY_TAGSHARE', 0x0100 );
 define ( 'NOTIFY_POKE',     0x0200 );
+define ( 'NOTIFY_LIKE',     0x0400 );
 
 define ( 'NOTIFY_SYSTEM',   0x8000 );
 
