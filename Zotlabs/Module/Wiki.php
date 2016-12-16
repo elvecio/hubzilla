@@ -222,11 +222,7 @@ class Wiki extends \Zotlabs\Web\Controller {
 					$html = wiki_generate_toc(zidify_text(purify_html(Markdown(wiki_bbcode(json_decode($content))))));
 					$renderedContent = wiki_convert_links($html,argv(0).'/'.argv(1).'/'.$wikiUrlName);
 				}
-				$hide_editor = false;
 				$showPageControls = $wiki_editor;
-				$showNewWikiButton = $wiki_owner;
-				$showNewPageButton = $wiki_editor;
-				$pageHistory = wiki_page_history(array('resource_id' => $resource_id, 'pageUrlName' => $pageUrlName));
 				break;
 			default:	// Strip the extraneous URL components
 				goaway('/' . argv(0) . '/' . argv(1) . '/' . $wikiUrlName . '/' . $pageUrlName);
@@ -238,7 +234,7 @@ class Wiki extends \Zotlabs\Web\Controller {
 		$wikiModal = replace_macros(get_markup_template('generic_modal.tpl'), array(
 			'$id' => $wikiModalID,
 			'$title' => t('Revision Comparison'),
-			'$ok' => t('Revert'),
+			'$ok' => (($showPageControls) ? t('Revert') : ''),
 			'$cancel' => t('Cancel')
 		));
 				
@@ -246,29 +242,17 @@ class Wiki extends \Zotlabs\Web\Controller {
 			'$wikiheaderName' => $wikiheaderName,
 			'$wikiheaderPage' => $wikiheaderPage,
 			'$renamePage' => $renamePage,
-			'$hideEditor' => $hide_editor, // True will completely hide the content section and is used for the case of no wiki selected
-			'$chooseWikiMessage' => t('Choose an available wiki from the list on the left.'),
 			'$showPageControls' => $showPageControls,
 			'$editOrSourceLabel' => (($showPageControls) ? t('Edit') : t('Source')),
 			'$tools_label' => 'Page Tools',
-			'$showNewWikiButton'=> $showNewWikiButton,
-			'$showNewPageButton'=> $showNewPageButton,
 			'$channel' => $owner['channel_address'],
 			'$resource_id' => $resource_id,
 			'$page' => $pageUrlName,
-			'$lockstate' => $x['lockstate'],
-			'$acl' => $x['acl'],
-			'$allow_cid' => $x['allow_cid'],
-			'$allow_gid' => $x['allow_gid'],
-			'$deny_cid' => $x['deny_cid'],
-			'$deny_gid' => $x['deny_gid'],
-			'$bang' => $x['bang'],
 			'$mimeType' => $mimeType,
 			'$content' => $content,
 			'$renderedContent' => $renderedContent,
 			'$pageRename' => array('pageRename', t('New page name'), '', ''),
 			'$commitMsg' => array('commitMsg', '', '', '', '', 'placeholder="Short description of your changes (optional)"'),
-			'$pageHistory' => $pageHistory['history'],
 			'$wikiModal' => $wikiModal,
 			'$wikiModalID' => $wikiModalID,
 			'$commit' => 'HEAD',
@@ -278,7 +262,7 @@ class Wiki extends \Zotlabs\Web\Controller {
 			'$embedPhotosModalOK' => t('OK'),
 			'$modalchooseimages' => t('Choose images to embed'),
 			'$modalchoosealbum' => t('Choose an album'),
-			'$modaldiffalbum' => t('Choose a different album...'),
+			'$modaldiffalbum' => t('Choose a different album'),
 			'$modalerrorlist' => t('Error getting album list'),
 			'$modalerrorlink' => t('Error getting photo link'),
 			'$modalerroralbum' => t('Error getting album'),
@@ -495,8 +479,9 @@ class Wiki extends \Zotlabs\Web\Controller {
 			}
 
 			$historyHTML = widget_wiki_page_history(array(
-					'resource_id' => $resource_id,
-					'pageUrlName' => $pageUrlName
+				'resource_id' => $resource_id,
+				'pageUrlName' => $pageUrlName,
+				'permsWrite' => $perms['write']
 			));
 			json_return_and_die(array('historyHTML' => $historyHTML, 'message' => '', 'success' => true));
 		}

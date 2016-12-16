@@ -41,7 +41,7 @@
 			</div>
 		</form>
 	</div>
-	<div id="wiki-content-container" class="section-content-wrapper" {{if $hideEditor}}style="display: none;"{{/if}}>
+	<div id="wiki-content-container" class="section-content-wrapper">
 		<ul class="nav nav-tabs" id="wiki-nav-tabs">
 			<li id="edit-pane-tab"><a data-toggle="tab" href="#edit-pane">{{$editOrSourceLabel}}</a></li>
 			<li class="active"><a data-toggle="tab" href="#preview-pane" id="wiki-get-preview">View</a></li>
@@ -84,27 +84,25 @@
 {{$wikiModal}}
 
 <div class="modal" id="embedPhotoModal" tabindex="-1" role="dialog" aria-labelledby="embedPhotoLabel" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-        <h4 class="modal-title" id="embedPhotoModalLabel">{{$embedPhotosModalTitle}}</h4>
-      </div>
-     <div class="modal-body" id="embedPhotoModalBody" >
-         <div id="embedPhotoModalBodyAlbumListDialog" class="hide">
-            <div id="embedPhotoModalBodyAlbumList"></div>
-         </div>
-         <div id="embedPhotoModalBodyAlbumDialog" class="hide">
-         </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-default" data-dismiss="modal">{{$embedPhotosModalCancel}}</button>
-        <button id="embed-photo-OKButton" type="button" class="btn btn-primary">{{$embedPhotosModalOK}}</button>
-      </div>
-    </div><!-- /.modal-content -->
-  </div><!-- /.modal-dialog -->
+	<div class="modal-dialog">
+		<div class="modal-content">
+			<div class="modal-header">
+				<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+				<h4 class="modal-title" id="embedPhotoModalLabel">{{$embedPhotosModalTitle}}</h4>
+			</div>
+			<div class="modal-body" id="embedPhotoModalBody" >
+				<div id="embedPhotoModalBodyAlbumListDialog" class="hide">
+					<div id="embedPhotoModalBodyAlbumList"></div>
+				</div>
+				<div id="embedPhotoModalBodyAlbumDialog" class="hide"></div>
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-default" data-dismiss="modal">{{$embedPhotosModalCancel}}</button>
+				<button id="embed-photo-OKButton" type="button" class="btn btn-primary">{{$embedPhotosModalOK}}</button>
+			</div>
+		</div><!-- /.modal-content -->
+	</div><!-- /.modal-dialog -->
 </div><!-- /.modal -->
-
 
 <script>
 	window.wiki_resource_id = '{{$resource_id}}';
@@ -225,11 +223,6 @@
 			if (data.success) {
 				$('#wiki_page_list_container').html(data.pages);
 				$('#wiki_page_list_container').show();
-				{{if $showNewPageButton}}
-					$('#new-page-button').show();
-				{{else}}
-					$('#new-page-button').hide();
-				{{/if}}
 			} else {
 				alert('Error fetching page list!');
 				window.console.log('Error fetching page list!');
