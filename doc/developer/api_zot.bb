@@ -1,30 +1,25 @@
-Zot API
-=======
+[h3]Zot API[/h3]
 
-The API endpoints detailed below are relative to `api/z/1.0`, meaning that if an 
-API is listed as `channel/stream` the full API URL is 
-`[baseurl]/api/z/1.0/channel/stream`
+The API endpoints detailed below are relative to [code]api/z/1.0[/code], meaning that if an API is listed as [code]channel/stream[/code] the full API URL is [code][baseurl]/api/z/1.0/channel/stream[/code].
 
-channel/export/basic
-================================================================================
+[h3]channel/export/basic[/h3]
 
 Export channel data
 
 
-channel/stream
-================================================================================
+[h3]channel/stream[/h3]
 
 Fetch channel conversation items 
 
-network/stream
-================================================================================
+[h3]network/stream[/h3]
+
 
 Fetch network conversation items 
 
 
 
-files
-================================================================================
+[h3]files[/h3]
+
 
 List file storage (attach DB)
 
@@ -56,7 +51,7 @@ curl -u mychannel:mypassword https://xyz.macgirvin.com/api/z/1.0/files -d filety
 
 
 Returns:
-
+[code nowrap]
 	{
 	
 	    "success": true,
@@ -126,17 +121,17 @@ Returns:
 	        }
 		]
 	}
+[/code]
 
 
 
+[h3]filemeta[/h3]
 
-filemeta
-================================================================================
 Export file metadata for any uploaded file
 
 
-filedata
-================================================================================
+[h3]filedata[/h3]
+
 
 Provides the ability to download a file from cloud storage in chunks
 
@@ -169,7 +164,7 @@ Example:
 	https://xyz.macgirvin.com/api/z/1.0/filedata?f=&file_id=9f5217770fd&start=0&length=48
 
 Returns:
-
+[code nowrap]
 	{
 	
     	"attach": {
@@ -201,16 +196,16 @@ Returns:
     	}
 	
 	}
+[/code]
+
+[h3]file/export[/h3]
 
 
-file/export
-================================================================================
+[h3]file[/h3]
 
-file
-================================================================================
 
-albums
-================================================================================
+[h3]albums[/h3]
+
 
 Description: list photo albums
 
@@ -232,7 +227,7 @@ Output:
 
 Example:
 
-
+[code nowrap]
 	{
 	
 	    "success": true,
@@ -275,21 +270,21 @@ Example:
 	    ]
 	
 	}
+[/code]
 
 
+[h3]photos[/h3]
 
-photos
-================================================================================
 
 list photo metadata
 
 
-photo
-================================================================================
+[h3]photo[/h3]
 
 
-group
-================================================================================
+
+[h3]group[/h3]
+
 
 `GET /api/z/1.0/group`
 
@@ -299,7 +294,7 @@ Returns: DB tables of all privacy groups.
 
 To use with API group_members, provide either 'group_id' from the id element returned in this call, or 'group_name' from the gname returned in this call.
 
-
+[code nowrap]
 	[
 	
 	    {
@@ -327,9 +322,9 @@ To use with API group_members, provide either 'group_id' from the id element ret
 	        "gname": "Co-workers"
 	    }
 	]
+[/code]
+[h3]group_members[/h3]
 
-group_members
-================================================================================
 
 `GET /api/z/1.0/group_members`
 
@@ -342,7 +337,7 @@ Returns:
 
 group_member+abook+xchan (DB join) for each member of the privacy group 
 
-
+[code nowrap]
 	[
 	
 	    {
@@ -459,10 +454,10 @@ group_member+abook+xchan (DB join) for each member of the privacy group
 	    }
 
 	]
+[/code]
 
+[h3]xchan[/h3]
 
-xchan
-================================================================================
 
 An xchan is a global location independent channel and is the primary record for a network 
 identity. It may refer to channels on other websites, networks, or services. 
@@ -476,7 +471,7 @@ Returns a portable xchan structure
 Example: https://xyz.macgirvin.com/api/z/1.0/xchan?f=&address=mike@macgirvin.com
 
 Returns:
-
+[code nowrap]
 	{
 		"hash": "jr54M_y2l5NgHX5wBvP0KqWcAHuW23p1ld-6Vn63_pGTZklrI36LF8vUHMSKJMD8xzzkz7s2xxCx4-BOLNPaVA",
 		"guid": "sebQ-IC4rmFn9d9iu17m4BXO-kHuNutWo2ySjeV2SIW1LzksUkss12xVo3m3fykYxN5HMcc7gUZVYv26asx-Pg",
@@ -505,9 +500,9 @@ Returns:
 		"pubforum": "0",
 		"deleted": "0"
 	}
+[/code]
+[h3]item/update[/h3]
 
-item/update
-================================================================================
 
 Create or update an item (post, activity, webpage, etc.)
 
@@ -650,7 +645,7 @@ Example:
 
 Returns:
 
-
+[code nowrap]
     {
 
         "success": true,
@@ -732,23 +727,23 @@ Returns:
         }
 
     }
+[/code]
+[h3]item/full[/h3]
 
-item/full
-================================================================================
 
 Get all data associated with an item
 
-abook
-================================================================================
+[h3]abook[/h3]
+
 
 Connections
 
-abconfig
-================================================================================
+[h3]abconfig[/h3]
+
 
 Connection metadata (such as permissions)
 
-perm_allowed
-================================================================================
+[h3]perm_allowed[/h3]
+
 
 Check a permission for a given xchan

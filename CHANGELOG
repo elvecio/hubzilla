@@ -1,4 +1,9 @@
-Hubzilla 2.0 (????-??-??)
+Hubzilla 2.0 (2016-12-23)
+	- Deprecate bb_iframe
+	- Note widget: resize the textarea to reveal full content
+	- Implement fixed left aside
+	- Implement lockview for wikilist
+	- Simplify wikilist widget
 	- Router error reporting
 	- Setup changes to check for shell_exec and exec functions
 	- Extensible permissions upgrade handling for channels with custom permission roles
@@ -32,6 +37,11 @@ Hubzilla 2.0 (????-??-??)
 	- Zot API re-write and extended
 
 	Bugfixes
+	- Fix z_fetch_url() incorrect variable
+	- Fix SQL error with app categories
+	- Fix do not show revert buttons if we do not have write perms
+	- Fix dropdown positions
+	- Fix do not increase opacity to more than 1
 	- Fix clone sync missing for some item delete operations
 	- Fix embed-image for fullscreen mode
 	- Fix attach_list_files()
@@ -57,13 +67,14 @@ Hubzilla 2.0 (????-??-??)
 	- Fix fromStandalonePermission()
 
 	Plugins
+	- GNU Social: removed from addons for security reasons - it might be re-implemented once it is properly reviewed
+	- Diaspora: missing item author when diaspora public comment received from relay
 	- Superblock: refactoring
 	- New addon: tripleaes for pro
 	- Cdav:  "if not exists" only supported starting with postgresql v. 9.5 debian stable has 9.4
 	- Rendezvous: added markers and members export tool at /rendezvous/[group_id]/export/{markers,members}
 	- Twitter: move twitter api to addon
 	- New addon: b2tbtn (back to top button)
-	- GNU Social: only enable plugin if system.experimental is set
 	- Diaspora: import public diaspora messages to sys if applicable
 	- Diaspora: try and handle singletons better and simplify the associated notifier decisions
 	- Rendezvous: add proximity alert feature to members to issue notification when member is within a specified distance.

@@ -434,12 +434,12 @@ function contextualHelp() {
 
 	if(container.hasClass('contextual-help-content-open')) {
 		container.removeClass('contextual-help-content-open');
-		$('main').css('top', '')
+		$('main').css('margin-top', '')
 	}
 	else {
 		container.addClass('contextual-help-content-open');
 		var mainTop = container.outerHeight(true);
-		$('main').css('top', mainTop + 'px');
+		$('main').css('margin-top', mainTop + 'px');
 	}
 }
 
@@ -451,10 +451,18 @@ function contextualHelpFocus(target, openSidePanel) {
             else {
                     $("main").removeClass('region_1-on');
             }
+
+	    var css_position = $(target).parent().css('position');
+	    if (css_position === 'fixed') {
+	            $(target).parent().css('position', 'static');
+	    }
+
             $('html,body').animate({ scrollTop: $(target).offset().top - $('nav').outerHeight(true) - $('#contextual-help-content').outerHeight(true)}, 'slow');
             for (i = 0; i < 3; i++) {
                     $(target).fadeTo('slow', 0.1).fadeTo('slow', 1.0);
             }
+
+	    $(target).parent().css('position', css_position);
         }
 }
 
@@ -665,6 +673,8 @@ function updateConvItems(mode,data) {
 		$('html, body').animate({ scrollTop: $('.item_' + bParam_mid.substring(0,32)).offset().top - $('nav').outerHeight() }, 'slow');
 		$('.item_' + bParam_mid.substring(0,32)).addClass('item-highlight');
 	}
+
+	$(document.body).trigger("sticky_kit:recalc");
 
 }
 

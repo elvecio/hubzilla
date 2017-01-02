@@ -68,6 +68,7 @@ class Directory extends \Zotlabs\Web\Controller {
 		$observer = get_observer_hash();
 	
 		$globaldir = get_directory_setting($observer, 'globaldir');
+
 		// override your personal global search pref if we're doing a navbar search of the directory
 		if(intval($_REQUEST['navsearch']))
 			$globaldir = 1;
@@ -262,7 +263,7 @@ class Directory extends \Zotlabs\Web\Controller {
 	
 							$hometown = ((x($profile,'hometown') == 1) ? $profile['hometown']  : False);
 	
-							$about = ((x($profile,'about') == 1) ? bbcode($profile['about']) : False);
+							$about = ((x($profile,'about') == 1) ? zidify_links(bbcode($profile['about'])) : False);
 	
 							$keywords = ((x($profile,'keywords')) ? $profile['keywords'] : '');
 	

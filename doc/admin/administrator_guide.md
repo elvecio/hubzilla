@@ -1,5 +1,5 @@
 
-# Overview
+### Overview
 
 $Projectname is more than a simple web application. It is a
 complex communications system which more closely resembles an email server
@@ -16,7 +16,7 @@ websites. It will run on most any Linux VPS system. Windows LAMP platforms
 such as XAMPP and WAMP are not officially supported at this time however
 we welcome patches if you manage to get it working.
 
-# Where to find more help
+### Where to find more help
 If you encounter problems or have issues not addressed in this documentation, 
 please let us know via the [Github issue
 tracker](https://github.com/redmatrix/hubzilla/issues). Please be as clear as you
@@ -27,14 +27,14 @@ in existence we may have only limited ability to debug your PHP installation or
 acquire any missing modules * but we will do our best to solve any general code
 issues.
 
-# Before you begin 
+### Before you begin 
 
-## Choose a domain name or subdomain name for your server
+#### Choose a domain name or subdomain name for your server
 
 $Projectname can only be installed into the root of a domain or sub-domain, and can 
 not be installed using alternate TCP ports.
 
-## Decide if you will use SSL and obtain an SSL certificate before software installation
+#### Decide if you will use SSL and obtain an SSL certificate before software installation
 
 You SHOULD use SSL. If you use SSL, you MUST use a "browser-valid" certificate.  
 *You MUST NOT use self-signed certificates!*
@@ -74,14 +74,14 @@ it is installed, and an existing directory in this location may prevent some of
 these services from working correctly. This should not be a problem with Apache,
 but may be an issue with nginx or other web server platforms.
 
-# Deployment
+### Deployment
 There are several ways to deploy a new hub.
 
 * Manual installation on an existing server
 * Automated installation on an existing server using a shell script
 * Automated deployment using an OpenShift virtual private server (VPS)
 
-# Requirements
+### Requirements
 * Apache with mod-rewrite enabled and "AllowOverride All" so you can use a 
   local .htaccess file. Some folks have successfully used nginx and lighttpd.
   Example config scripts are available for these platforms in doc/install.
@@ -109,9 +109,9 @@ PHP might differ from the _webserver_ version
 * Installation into a top-level domain or sub-domain (without a 
   directory/path component in the URL) is REQUIRED.
 
-# Manual Installation #
+### Manual Installation
 
-## Unpack the $Projectname files into the root of your web server document area ###
+#### Unpack the $Projectname files into the root of your web server document area
 If you copy the directory tree to your webserver, make sure that you include the
 hidden files like .htaccess.
 
@@ -148,14 +148,14 @@ web-based administrative tools to function:
 * `view/theme`
 * `widget`
 
-## Official addons
-### Installation
+#### Official addons
+##### Installation
 Navigate to your webThen you should clone the addon repository (separately). We'll give this repository a nickname of 'hzaddons'. You can pull in other hubzilla addon repositories by giving them different nicknames::
 
     cd mywebsite
     util/add_addon_repo https://github.com/redmatrix/hubzilla-addons.git hzaddons
 
-### Updating
+##### Updating
 For keeping the addon tree updated, you should be on your top level website directory and issue an update command for that repository::
 
     cd mywebsite
@@ -167,10 +167,10 @@ Create searchable representations of the online documentation. You may do this
     cd mywebsite
     util/importdoc
 
-# Automated installation via the .homeinstall shell script
+### Automated installation via the .homeinstall shell script
 There is a shell script in (``.homeinstall/hubzilla-setup.sh``) that will install $Projectname and its dependencies on a fresh installation of Debian 8.3 stable (Jessie). It should work on similar Linux systems but your results may vary.
 
-## Requirements
+#### Requirements
 The installation script was originally designed for a small hardware server behind your home router. However, it has been tested on several systems running Debian 8.3:
 
 * Home-PC (Debian-8.3.0-amd64)
@@ -183,7 +183,7 @@ The installation script was originally designed for a small hardware server behi
 
 * DigitalOcean droplet (Debian 8.3 x64 / 512 MB Memory / 20 GB Disk / NYC3)
 
-## Overview of installation steps
+#### Overview of installation steps
 1. `apt-get install git`
 1. `mkdir -p /var/www/html`
 1. `cd /var/www/html`
@@ -196,7 +196,7 @@ The installation script was originally designed for a small hardware server behi
 1. `service apache2 reload`
 1. Open your domain with a browser and step throught the initial configuration of $Projectname.
 
-# Service Classes
+### Service Classes
 
 Service classes allow you to set limits on system resources by limiting what individual
 accounts can do, including file storage and top-level post limits. Define custom service 
@@ -262,8 +262,8 @@ set the account that owns channel 'blogchan' to service class 'firstclass' (with
 * chatters_inroom - maximum chatters per room
 * access_tokens - maximum number of Guest Access Tokens per channel
 
-# Theme management
-## Repo management example 
+### Theme management
+#### Repo management example 
 1. Navigate to your hub web root
 
   ```
@@ -280,9 +280,9 @@ set the account that owns channel 'blogchan' to service class 'firstclass' (with
   root@hub:/var/www#  util/update_theme_repo DeadSuperHero
   ```
 
-# Channel Directory
+### Channel Directory
 
-## Keywords
+#### Keywords
 
 There is a "tag cloud" of keywords that can appear on the channel directory page. 
 If you wish to hide these keywords, which are drawn from the directory server, you 
@@ -296,9 +296,9 @@ empty:
 
     util/config system directory_server ""
 
-# Upgrading from RedMatrix to $Projectname
+### Upgrading from RedMatrix to $Projectname
 
-## How to migrate an individual channel from RedMatrix to $Projectname
+#### How to migrate an individual channel from RedMatrix to $Projectname
 
 1. Clone the channel by opening an account on a $Projectname hub and performing a basic import (not content) from the original RedMatrix hub. Give your new clone time to sync connections and settings.
 1. Export individual channel content from your RedMatrix hub to a set of JSON text files using the red.hub/uexport tool. Do this in monthly increments if necessary.
@@ -307,8 +307,16 @@ empty:
 1. After successful import (check!) delete your channel on the old RedMatrix Server.
 1. On the $Projectname server visit new.hub/locs and upgrade to your channel to a primary one. And when the old Redmatrix server is still listed delete them here as well. Press "Sync" to inform all other server in the grid.
 
-# Troubleshooting
-## Log files
+### Troubleshooting
+
+#### Log files
+
+The system logfile is an extremely useful resource for tracking down things that go wrong. This can be enabled in the admin/log configuration page. A loglevel setting of LOGGER_DEBUG is preferred for stable production sites. Most things that go wrong with communications or storage are listed here. A setting of LOGGER_DATA provides [b]much[/b] more detail, but may fill your disk. In either case we recommend the use of logrotate on your operating system to cycle logs and discard older entries. 
+
+At the bottom of your .htconfig.php file are several lines (commented out) which enable PHP error logging. This reports issues with code syntax and executing the code and is the first place you should look for issues which result in a "white screen" or blank page. This is typically the result of code/syntax problems. 
+Database errors are reported to the system logfile, but we've found it useful to have a file in your top-level directory called dbfail.out which [b]only[/b] collects database related issues. If the file exists and is writable, database errors will be logged to it as well as to the system logfile.
+
+In the case of "500" errors, the issues may often be logged in your webserver logs, often /var/log/apache2/error.log or something similar. Consult your operating system documentation. 
 
 There are three different log facilities.
 
@@ -338,8 +346,19 @@ git checkout file.php
 
 To immediately clear out all the extra logging stuff you added.  Use the information from this log and any detail you can provide from your investigation of the problem to file your bug report - unless your analysis points to the source of the problem. In that case, just fix it. 
 
-### Rotating log files
+##### Rotating log files
 
 1. Enable the **logrot** addon in the official [hubzilla-addons](https://github.com/redmatrix/hubzilla-addons) repo
 1. Create a directory in your web root called `log` with webserver write permissions
 1. Go to the **logrot** admin settings and enter this folder name as well as the max size and number of retained log files.
+
+
+#### Reporting issues
+
+When reporting issues, please try to provide as much detail as may be necessary for developers to reproduce the issue and provide the complete text of all error messages.
+
+We encourage you to try to the best of your abilities to use these logs combined with the source code in your possession to troubleshoot issues and find their cause. The community is often able to help, but only you have access to your site logfiles and it is considered a security risk to share them.   
+
+If a code issue has been uncovered, please report it on the project bugtracker (https://github.com/redmatrix/hubzilla/issues). Again provide as much detail as possible to avoid us going back and forth asking questions about your configuration or how to duplicate the problem, so that we can get right to the problem and figure out what to do about it. You are also welcome to offer your own solutions and submit patches. In fact we encourage this as we are all volunteers and have little spare time available. The more people that help, the easier the workload for everybody. It's OK if your solution isn't perfect. Every little bit helps and perhaps we can improve on it. 
+
+

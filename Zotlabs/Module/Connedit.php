@@ -37,7 +37,7 @@ class Connedit extends \Zotlabs\Web\Controller {
 				intval(argv(1))
 			);
 			if($r) {
-				\App::$poi = $r[0];
+				\App::$poi = array_shift($r);
 			}
 		}
 	
@@ -86,6 +86,12 @@ class Connedit extends \Zotlabs\Web\Controller {
 	
 		call_hooks('contact_edit_post', $_POST);
 	
+		$vc = get_abconfig(local_channel(),$orig_record['abook_xchan'],'system','vcard');
+		$vcard = (($vc) ? \Sabre\VObject\Reader::read($vc) : null); 
+		$serialised_vcard = update_vcard($_REQUEST,$vcard);
+		if($serialised_vcard)
+			set_abconfig(local_channel(),$orig_record[0]['abook_xchan'],'system','vcard',$serialised_vcard);
+
 		if(intval($orig_record[0]['abook_self'])) {
 			$autoperms = intval($_POST['autoperms']);
 			$is_self = true;
@@ -367,7 +373,7 @@ class Connedit extends \Zotlabs\Web\Controller {
 				intval(\App::$poi['abook_id'])
 			);
 			if($r) {
-				\App::$poi = $r[0];
+				\App::$poi = array_shift($r);
 			}
 	
 			$clone = \App::$poi;
@@ -647,17 +653,25 @@ class Connedit extends \Zotlabs\Web\Controller {
 				$abook_prev = $abook_next = 0;
 			}
 	
+			$vc = get_abconfig(local_channel(),$contact['abook_xchan'],'system','vcard');
+
+			$vctmp = (($vc) ? \Sabre\VObject\Reader::read($vc) : null); 
+			$vcard = (($vctmp) ? get_vcard_array($vctmp,$contact['abook_id']) : [] );
+			if(! $vcard)
+				$vcard['fn'] = $contact['xchan_name'];
+
+
 			$tpl = get_markup_template("abook_edit.tpl");
 	
 			if(feature_enabled(local_channel(),'affinity')) {
 	
-				$labels = array(
+				$labels = [
 					t('Me'),
 					t('Family'),
 					t('Friends'),
 					t('Acquaintances'),
 					t('All')
-				);
+				];
 				call_hooks('affinity_labels',$labels);
 				$label_str = '';
 	
@@ -775,12 +789,12 @@ class Connedit extends \Zotlabs\Web\Controller {
 			else
 				$locstr = t('none');
 	
-			$o .= replace_macros($tpl,array(
-	
+			$o .= replace_macros($tpl, [
 				'$header'         => (($self) ? t('Connection Default Permissions') : sprintf( t('Connection: %s'),$contact['xchan_name'])),
 				'$autoperms'      => array('autoperms',t('Apply these permissions automatically'), ((get_pconfig(local_channel(),'system','autoperms')) ? 1 : 0), t('Connection requests will be approved without your interaction'), $yes_no),
 				'$addr'           => $contact['xchan_addr'],
 				'$section'        => $section,
+				'$vcard'          => $vcard,
 				'$addr_text'      => t('This connection\'s primary address is'),
 				'$loc_text'       => t('Available locations:'),
 				'$locstr'         => $locstr,
@@ -818,13 +832,42 @@ class Connedit extends \Zotlabs\Web\Controller {
 				'$permnote_self'  => t('Some permissions may be inherited from your channel\'s <a href="settings"><strong>privacy settings</strong></a>, which have higher priority than individual settings. You can change those settings here but they wont have any impact unless the inherited setting changes.'),
 				'$lastupdtext'    => t('Last update:'),
 				'$last_update'    => relative_date($contact['abook_connected']),
+				'$is_mobile'      => ((\App::$is_mobile || \App::$is_tablet) ? true : false),
 				'$profile_select' => contact_profile_assign($contact['abook_profile']),
 				'$multiprofs'     => $multiprofs,
 				'$contact_id'     => $contact['abook_id'],
 				'$name'           => $contact['xchan_name'],
 				'$abook_prev'     => $abook_prev,
-				'$abook_next'     => $abook_next	
-			));
+				'$abook_next'     => $abook_next,
+				'$vcard_label'    => t('Details'),	
+				'$displayname'    => $displayname,
+				'$name_label'     => t('Name'),
+				'$org_label'      => t('Organisation'),
+				'$title_label'    => t('Title'),
+				'$tel_label'      => t('Phone'),
+				'$email_label'    => t('Email'),
+				'$impp_label'     => t('Instant messenger'),
+				'$url_label'      => t('Website'),
+				'$adr_label'      => t('Address'),
+				'$note_label'     => t('Note'),
+				'$mobile'         => t('Mobile'),
+				'$home'           => t('Home'),
+				'$work'           => t('Work'),
+				'$other'          => t('Other'),
+				'$add_card'       => t('Add Contact'),
+				'$add_field'      => t('Add Field'),
+				'$create'         => t('Create'),
+				'$update'         => t('Update'),
+				'$delete'         => t('Delete'),
+				'$cancel'         => t('Cancel'),
+				'$po_box'         => t('P.O. Box'),
+				'$extra'          => t('Additional'),
+				'$street'         => t('Street'),
+				'$locality'       => t('Locality'),
+				'$region'         => t('Region'),
+				'$zip_code'       => t('ZIP Code'),
+				'$country'        => t('Country')
+			]);
 	
 			$arr = array('contact' => $contact,'output' => $o);
 	
