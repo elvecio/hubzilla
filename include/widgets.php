@@ -901,9 +901,11 @@ function widget_chatroom_members() {
 }
 
 function widget_wiki_list($arr) {
-	require_once("include/wiki.php");
+
 	$channel = channelx_by_n(App::$profile_uid);
-	$wikis = wiki_list($channel, get_observer_hash());
+
+	$wikis = Zotlabs\Lib\NativeWiki::listwikis($channel,get_observer_hash());
+
 	if($wikis) {
 		return replace_macros(get_markup_template('wikilist_widget.tpl'), array(
 			'$header' => t('Wiki List'),
@@ -916,8 +918,9 @@ function widget_wiki_list($arr) {
 
 function widget_wiki_pages($arr) {
 
-	require_once("include/wiki.php");
 	$channelname = ((array_key_exists('channel',$arr)) ? $arr['channel'] : '');
+	$c = channelx_by_nick($channelname);
+
 	$wikiname = '';
 	if (array_key_exists('refresh', $arr)) {
 		$not_refresh = (($arr['refresh']=== true) ? false : true);
@@ -925,11 +928,12 @@ function widget_wiki_pages($arr) {
 		$not_refresh = true;
 	}
 	$pages = array();
-	if (!array_key_exists('resource_id', $arr)) {
+	if (! array_key_exists('resource_id', $arr)) {
 		$hide = true;
 	} else {
-		$p = wiki_page_list($arr['resource_id']);
-		if ($p['pages']) {
+		$p = Zotlabs\Lib\NativeWikiPage::page_list($c['channel_id'],get_observer_hash(),$arr['resource_id']);
+
+		if($p['pages']) {
 			$pages = $p['pages'];
 			$w = $p['wiki'];
 			// Wiki item record is $w['wiki']
@@ -941,29 +945,36 @@ function widget_wiki_pages($arr) {
 	}
 	$can_create = perm_is_allowed(\App::$profile['uid'],get_observer_hash(),'write_pages');
 
+	$can_delete = ((local_channel() && (local_channel() == \App::$profile['uid'])) ? true : false);
+
 	return replace_macros(get_markup_template('wiki_page_list.tpl'), array(
 			'$hide' => $hide,
+			'$resource_id' => $arr['resource_id'],
 			'$not_refresh' => $not_refresh,
 			'$header' => t('Wiki Pages'),
 			'$channel' => $channelname,
 			'$wikiname' => $wikiname,
 			'$pages' => $pages,
 			'$canadd' => $can_create,
+			'$candel' => $can_delete,
 			'$addnew' => t('Add new page'),
 			'$pageName' => array('pageName', t('Page name')),
 	));
 }
 
 function widget_wiki_page_history($arr) {
-	require_once("include/wiki.php");
+
 	$pageUrlName = ((array_key_exists('pageUrlName', $arr)) ? $arr['pageUrlName'] : '');
 	$resource_id = ((array_key_exists('resource_id', $arr)) ? $arr['resource_id'] : '');
-	$pageHistory = wiki_page_history(array('resource_id' => $resource_id, 'pageUrlName' => $pageUrlName));
 
-	return replace_macros(get_markup_template('wiki_page_history.tpl'), array(
-			'$pageHistory' => $pageHistory['history'],
-			'$permsWrite' => $arr['permsWrite']
+	$pageHistory = Zotlabs\Lib\NativeWikiPage::page_history(array('channel_id' => App::$profile_uid, 'observer_hash' => get_observer_hash(), 'resource_id' => $resource_id, 'pageUrlName' => $pageUrlName));
+	return replace_macros(get_markup_template('nwiki_page_history.tpl'), array(
+		'$pageHistory' => $pageHistory['history'],
+		'$permsWrite' => $arr['permsWrite'],
+		'$name_lbl' => t('Name'),
+		'$msg_label' => t('Message','wiki_history')
 	));
+
 }
 
 function widget_bookmarkedchats($arr) {

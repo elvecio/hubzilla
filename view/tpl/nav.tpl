@@ -1,21 +1,23 @@
 	<div class="container-fluid">
 		<div class="navbar-header">
-			<button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar-collapse-1">
-				<span class="icon-bar"></span>
-				<span class="icon-bar"></span>
-				<span class="icon-bar"></span>
-			</button>
-			<button id="expand-tabs" type="button" class="navbar-toggle" data-toggle="collapse" data-target="#tabs-collapse-1">
-				<i class="fa fa-arrow-circle-down" id="expand-tabs-icon"></i>
-			</button>
-			<button id="expand-aside" type="button" class="navbar-toggle" data-toggle="offcanvas" data-target="#region_1">
-				<i class="fa fa-arrow-circle-right" id="expand-aside-icon"></i>
-			</button>
-			{{if $nav.help.6}}
-			<button id="context-help-btn" class="navbar-toggle" type="button" onclick="contextualHelp(); return false;">
-				<i class="fa fa-question-circle"></i>
-			</button>
-			{{/if}}
+			<div>
+				<button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar-collapse-1">
+					<span class="icon-bar"></span>
+					<span class="icon-bar"></span>
+					<span class="icon-bar"></span>
+				</button>
+				<button id="expand-tabs" type="button" class="navbar-toggle" data-toggle="collapse" data-target="#tabs-collapse-1">
+					<i class="fa fa-arrow-circle-down" id="expand-tabs-icon"></i>
+				</button>
+				<button id="expand-aside" type="button" class="navbar-toggle" data-toggle="offcanvas" data-target="#region_1">
+					<i class="fa fa-arrow-circle-right" id="expand-aside-icon"></i>
+				</button>
+				{{if $nav.help.6}}
+				<button id="context-help-btn" class="navbar-toggle" type="button" onclick="contextualHelp(); return false;">
+					<i class="fa fa-question-circle"></i>
+				</button>
+				{{/if}}
+			</div>
 			{{if $userinfo}}
 				<div class="usermenu-head dropdown-toggle fakelink" data-toggle="dropdown">
 					<img id="avatar" src="{{$userinfo.icon}}" alt="{{$userinfo.name}}">
@@ -152,18 +154,22 @@
 				</li>
 			{{/if}}
 
-			{{if $nav.loginmenu && !$userinfo}}
-				<li class="{{$nav.loginmenu.0.2}} hidden-xs">
-					<a data-toggle="dropdown" href="{{$nav.loginmenu.0.0}}" title="{{$nav.loginmenu.0.3}}" id="{{$nav.loginmenu.0.4}}">{{$nav.loginmenu.0.1}} <span class="caret" id="loginmenu-caret"></span></a>
-					<ul class="dropdown-menu" role="menu">
-						{{foreach $nav.loginmenu as $loginmenu}}
+			{{if $nav.login && !$userinfo}}
+				<li class="nav-login hidden-xs">
+					<a onclick="openClose('nav-login'); return false;" href="#" title="{{$nav.loginmenu.0.3}}" id="{{$nav.loginmenu.0.4}}">{{$nav.loginmenu.0.1}} <span class="caret" id="loginmenu-caret"></span></a>
+					<div id="nav-login" class="login-dropdown-menu" style="display:none; width:150%;">
+					{{$nav.login}}
+					{{$nav.remote_login}}
+
+					<!--	{{foreach $nav.loginmenu as $loginmenu}}
 						<li role="presentation"><a class="{{$loginmenu.2}}" href="{{$loginmenu.0}}" title="{{$loginmenu.3}}" role="menuitem" id="{{$loginmenu.4}}">{{$loginmenu.1}}</a></li>
-						{{/foreach}}
-					</ul>
+						{{/foreach}} --!>
+					</div>
 				</li>
-				{{foreach $nav.loginmenu as $loginmenu}}
+<!--				{{foreach $nav.loginmenu as $loginmenu}}
 				<li role="presentation"><a class="{{$loginmenu.2}} visible-xs" href="{{$loginmenu.0}}" title="{{$loginmenu.3}}" role="menuitem">{{$loginmenu.1}}</a></li>
 				{{/foreach}}
+--!>
 			{{/if}}
 
 			{{if $nav.register}}
@@ -206,7 +212,16 @@
 					<a class="{{$nav.help.2}}" target="hubzilla-help" href="{{$nav.help.0}}" title="{{$nav.help.3}}" id="{{$nav.help.4}}"{{if $nav.help.6}} onclick="contextualHelp(); return false;"{{/if}}>{{if $nav.help.6}}<i class="fa fa-question-circle"></i>{{else}}<i class="fa fa-question"></i>{{/if}}</a>
 				</li>
 			{{/if}}
+
+			{{if $navapps}}
+				<li class="dropdown-toggle" data-toggle="dropdown">
+					<a href="#"><i class="fa fa-bars"></i></a>
+				</li>
+				{{$navapps}}
+			{{/if}}
+
 			</ul>
+
 		</div>
 	</div>
 	{{if $nav.help.6}}

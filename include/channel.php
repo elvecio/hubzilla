@@ -671,6 +671,17 @@ function identity_basic_export($channel_id, $items = false) {
 		$ret['mail'] = $m;
 	}
 
+	$r = q("select * from item where resource_type like 'nwiki%%' and uid = %d order by created",
+		intval($channel_id)
+	);
+	if($r) {
+		$ret['wiki'] = array();
+		xchan_query($r);
+		$r = fetch_post_tags($r,true);
+		foreach($r as $rv) {
+			$ret['wiki'][] = encode_item($rv,true);
+		}
+	}
 
 	/** @warning this may run into memory limits on smaller systems */
 
@@ -1896,5 +1907,19 @@ function channel_manual_conv_update($channel_id) {
 		$x = get_config('system','manual_conversation_update');
 
 	return intval($x);
+
+}
+
+
+function remote_login() {
+
+		$o = replace_macros(get_markup_template('remote_login.tpl'),array(
+			'$title' => t('Remote Authentication'),
+			'$desc' => t('Enter your channel address (e.g. channel@example.com)'),
+			'$submit' => t('Authenticate')
+		));
+		return $o;
+
+
 
 }

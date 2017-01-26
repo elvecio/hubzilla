@@ -337,9 +337,12 @@ class Apps {
 		}
 
 		$install_action = (($installed) ? t('Update') : t('Install'));
+		$icon = ((strpos($papp['photo'],'icon:') === 0) ? substr($papp['photo'],5) : ''); 
+
 
 		return replace_macros(get_markup_template('app.tpl'),array(
 			'$app' => $papp,
+			'$icon' => $icon,
 			'$hosturl' => $hosturl,
 			'$purchase' => (($papp['page'] && (! $installed)) ? t('Purchase') : ''),
 			'$install' => (($hosturl && $mode == 'view') ? $install_action : ''),
@@ -445,9 +448,8 @@ class Apps {
 
 	static public function app_installed($uid,$app) {
 
-		$r = q("select id from app where app_id = '%s' and app_version = '%s' and app_channel = %d limit 1",
+		$r = q("select id from app where app_id = '%s' and app_channel = %d limit 1",
 			dbesc((array_key_exists('guid',$app)) ? $app['guid'] : ''), 
-			dbesc((array_key_exists('version',$app)) ? $app['version'] : ''), 
 			intval($uid)
 		);
 		return(($r) ? true : false);
@@ -514,7 +516,7 @@ class Apps {
 		if((! $darray['app_url']) || (! $darray['app_channel']))
 			return $ret;
 
-		if($arr['photo'] && ! strstr($arr['photo'],z_root())) {
+		if($arr['photo'] && (strpos($arr['photo'],'icon:') !== 0) && (! strstr($arr['photo'],z_root()))) {
 			$x = import_xchan_photo($arr['photo'],get_observer_hash(),true);
 			$arr['photo'] = $x[1];
 		}
@@ -594,7 +596,7 @@ class Apps {
 		if((! $darray['app_url']) || (! $darray['app_channel']) || (! $darray['app_id']))
 			return $ret;
 
-		if($arr['photo'] && ! strstr($arr['photo'],z_root())) {
+		if($arr['photo'] && (strpos($arr['photo'],'icon:') !== 0) && (! strstr($arr['photo'],z_root()))) {
 			$x = import_xchan_photo($arr['photo'],get_observer_hash(),true);
 			$arr['photo'] = $x[1];
 		}

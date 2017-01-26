@@ -302,7 +302,7 @@ function add_source_route($iid, $hash) {
  *  * \e boolean \b success true or false
  *  * \e array \b activity the resulting activity if successful
  */
-function post_activity_item($arr) {
+function post_activity_item($arr,$allow_code = false,$deliver = true) {
 
 	$ret = array('success' => false);
 
@@ -367,7 +367,7 @@ function post_activity_item($arr) {
 	$arr['comment_policy'] = map_scope(\Zotlabs\Access\PermissionLimits::Get($channel['channel_id'],'post_comments'));
 
 	if ((! $arr['plink']) && (intval($arr['item_thread_top']))) {
-		$arr['plink'] = z_root() . '/channel/' . $channel['channel_address'] . '/?f=&mid=' . $arr['mid'];
+		$arr['plink'] = z_root() . '/channel/' . $channel['channel_address'] . '/?f=&mid=' . urlencode($arr['mid']);
 	}
 
 
@@ -382,15 +382,19 @@ function post_activity_item($arr) {
 		return $ret;
 	}
 
-	$post = item_store($arr);
-	if($post['success'])
-		$post_id = $post['item_id'];
+	$post = item_store($arr,$allow_code,$deliver);
 
-	if($post_id) {
+	if($post['success']) {
+		$post_id = $post['item_id'];
+		$ret['item_id'] = $post_id;
+	}
+
+	if($post_id && $deliver) {
 		$arr['id'] = $post_id;
 		call_hooks('post_local_end', $arr);
 		Zotlabs\Daemon\Master::Summon(array('Notifier','activity',$post_id));
 		$ret['success'] = true;
+		//$ret['item_id'] = $post_id;
 		$ret['activity'] = $post['item'];
 	}
 
@@ -1511,6 +1515,7 @@ function item_store($arr, $allow_exec = false, $deliver = true) {
 	$arr['allow_gid']     = ((x($arr,'allow_gid'))     ? trim($arr['allow_gid'])             : '');
 	$arr['deny_cid']      = ((x($arr,'deny_cid'))      ? trim($arr['deny_cid'])              : '');
 	$arr['deny_gid']      = ((x($arr,'deny_gid'))      ? trim($arr['deny_gid'])              : '');
+	$arr['postopts']      = ((x($arr,'postopts'))      ? trim($arr['postopts'])              : '');
 	$arr['item_private']  = ((x($arr,'item_private'))  ? intval($arr['item_private'])        : 0 );
 	$arr['item_wall']     = ((x($arr,'item_wall'))     ? intval($arr['item_wall'])           : 0 );
 	$arr['item_type']     = ((x($arr,'item_type'))     ? intval($arr['item_type'])           : 0 );
@@ -1564,8 +1569,11 @@ function item_store($arr, $allow_exec = false, $deliver = true) {
 		$arr['attach'] = json_encode($arr['attach']);
 	}
 
-	$arr['aid']           = ((x($arr,'aid'))           ? intval($arr['aid'])                 : 0);
-	$arr['mid']           = ((x($arr,'mid'))           ? notags(trim($arr['mid']))           : random_string());
+	$arr['aid']           = ((x($arr,'aid'))           ? intval($arr['aid'])                           : 0);
+	$arr['mid']           = ((x($arr,'mid'))           ? notags(trim($arr['mid']))                     : random_string());
+	$arr['revision']      = ((x($arr,'revision') && intval($arr['revision']) > 0)   ? intval($arr['revision']) : 0);
+logger('revision: ' . $arr['revision']);
+
 	$arr['author_xchan']  = ((x($arr,'author_xchan'))  ? notags(trim($arr['author_xchan']))  : '');
 	$arr['owner_xchan']   = ((x($arr,'owner_xchan'))   ? notags(trim($arr['owner_xchan']))   : '');
 	$arr['created']       = ((x($arr,'created') !== false) ? datetime_convert('UTC','UTC',$arr['created']) : datetime_convert());
@@ -1621,7 +1629,7 @@ function item_store($arr, $allow_exec = false, $deliver = true) {
 	if($d2 > $d1)
 		$arr['item_delayed'] = 1;
 
-	$arr['llink'] = z_root() . '/display/' . $arr['mid'];
+	$arr['llink'] = z_root() . '/display/' . gen_link_id($arr['mid']);
 
 	if(! $arr['plink'])
 		$arr['plink'] = $arr['llink'];
@@ -1726,9 +1734,10 @@ function item_store($arr, $allow_exec = false, $deliver = true) {
 	if($parent_deleted)
 		$arr['item_deleted'] = 1;
 
-	$r = q("SELECT id FROM item WHERE mid = '%s' AND uid = %d LIMIT 1",
+	$r = q("SELECT id FROM item WHERE mid = '%s' AND uid = %d and revision = %d LIMIT 1",
 		dbesc($arr['mid']),
-		intval($arr['uid'])
+		intval($arr['uid']),
+		intval($arr['revision'])
 	);
 	if($r) {
 		logger('item_store: duplicate item ignored. ' . print_r($arr,true));
@@ -1783,9 +1792,10 @@ function item_store($arr, $allow_exec = false, $deliver = true) {
 
 	// find the item we just created
 
-	$r = q("SELECT * FROM item WHERE mid = '%s' AND uid = %d ORDER BY id ASC ",
+	$r = q("SELECT * FROM item WHERE mid = '%s' AND uid = %d and revision = %d ORDER BY id ASC ",
 		$arr['mid'],           // already dbesc'd
-		intval($arr['uid'])
+		intval($arr['uid']),
+		intval($arr['revision'])
 	);
 
 	if($r && count($r)) {
@@ -1995,6 +2005,8 @@ function item_store_update($arr,$allow_exec = false, $deliver = true) {
 
 	$arr['edited']        = ((x($arr,'edited')  !== false) ? datetime_convert('UTC','UTC',$arr['edited'])  : datetime_convert());
 	$arr['expires']       = ((x($arr,'expires')  !== false) ? datetime_convert('UTC','UTC',$arr['expires'])  : $orig[0]['expires']);
+
+	$arr['revision']      = ((x($arr,'revision') && $arr['revision'] > 0)   ? intval($arr['revision']) : 0);
 
 	if(array_key_exists('comments_closed',$arr) && $arr['comments_closed'] > NULL_DATE)
 		$arr['comments_closed'] = datetime_convert('UTC','UTC',$arr['comments_closed']);
@@ -2272,7 +2284,7 @@ function send_status_notifications($post_id,$item) {
 	if($unfollowed)
 		return;
 
-	$link =  z_root() . '/display/' . $item['mid'];
+	$link =  z_root() . '/display/' . gen_link_id($item['mid']);
 
 	$y = q("select id from notify where link = '%s' and uid = %d limit 1",
 		dbesc($link),
@@ -3299,7 +3311,7 @@ function retain_item($id) {
 	);
 }
 
-function drop_items($items) {
+function drop_items($items,$interactive = false,$stage = DROPITEM_NORMAL,$force = false) {
 	$uid = 0;
 
 	if(! local_channel() && ! remote_channel())
@@ -3307,7 +3319,7 @@ function drop_items($items) {
 
 	if(count($items)) {
 		foreach($items as $item) {
-			$owner = drop_item($item,false);
+			$owner = drop_item($item,$interactive,$stage,$force);
 			if($owner && ! $uid)
 				$uid = $owner;
 		}
@@ -3331,6 +3343,11 @@ function drop_items($items) {
 
 function drop_item($id,$interactive = true,$stage = DROPITEM_NORMAL,$force = false) {
 
+	// These resource types have linked items that should only be removed at the same time
+	// as the linked resource; if we encounter one set it to item_hidden rather than item_deleted.
+
+	$linked_resource_types = [ 'photo' ];
+
 	// locate item to be deleted
 
 	$r = q("SELECT * FROM item WHERE id = %d LIMIT 1",
@@ -3346,7 +3363,7 @@ function drop_item($id,$interactive = true,$stage = DROPITEM_NORMAL,$force = fal
 
 	$item = $r[0];
 
-	$linked_item = (($item['resource_id']) ? true : false);
+	$linked_item = (($item['resource_id'] && $item['resource_type'] && in_array($item['resource_type'], $linked_resource_types)) ? true : false);
 
 	$ok_to_delete = false;
 

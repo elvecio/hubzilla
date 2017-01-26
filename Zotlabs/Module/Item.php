@@ -429,7 +429,9 @@ class Item extends \Zotlabs\Web\Controller {
 			$body              = trim($_REQUEST['body']);
 			$body              .= trim($_REQUEST['attachment']);
 			$postopts          = '';
-	
+
+			$allow_empty       = ((array_key_exists('allow_empty',$_REQUEST)) ? intval($_REQUEST['allow_empty']) : 0);	
+
 			$private = intval($acl->is_private() || ($public_policy));
 	
 			// If this is a comment, set the permissions from the parent.
@@ -442,7 +444,7 @@ class Item extends \Zotlabs\Web\Controller {
 				$owner_hash        = $parent_item['owner_xchan'];
 			}
 		
-			if(! strlen($body)) {
+			if((! $allow_empty) && (! strlen($body))) {
 				if($preview)
 					killme();
 				info( t('Empty post discarded.') . EOL );
@@ -722,6 +724,8 @@ class Item extends \Zotlabs\Web\Controller {
 		if(! $mid) {
 			$mid = (($message_id) ? $message_id : item_message_id());
 		}
+
+
 		if(! $parent_mid) {
 			$parent_mid = $mid;
 		}
@@ -933,7 +937,7 @@ class Item extends \Zotlabs\Web\Controller {
 						'from_xchan'   => $datarray['author_xchan'],
 						'to_xchan'     => $datarray['owner_xchan'],
 						'item'         => $datarray,
-						'link'		   => z_root() . '/display/' . $datarray['mid'],
+						'link'		   => z_root() . '/display/' . gen_link_id($datarray['mid']),
 						'verb'         => ACTIVITY_POST,
 						'otype'        => 'item',
 						'parent'       => $parent,
@@ -951,7 +955,7 @@ class Item extends \Zotlabs\Web\Controller {
 						'from_xchan'   => $datarray['author_xchan'],
 						'to_xchan'     => $datarray['owner_xchan'],
 						'item'         => $datarray,
-						'link'		   => z_root() . '/display/' . $datarray['mid'],
+						'link'		   => z_root() . '/display/' . gen_link_id($datarray['mid']),
 						'verb'         => ACTIVITY_POST,
 						'otype'        => 'item'
 					));
@@ -1003,7 +1007,7 @@ class Item extends \Zotlabs\Web\Controller {
 		}
 	
 		$datarray['id']    = $post_id;
-		$datarray['llink'] = z_root() . '/display/' . $channel['channel_address'] . '/' . $post_id;
+		$datarray['llink'] = z_root() . '/display/' . gen_link_id($datarray['mid']);
 	
 		call_hooks('post_local_end', $datarray);
 	

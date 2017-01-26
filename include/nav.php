@@ -1,6 +1,8 @@
 <?php /** @file */
 
-function nav(&$a) {
+use \Zotlabs\Lib as Zlib;
+
+function nav() {
 
 	/**
 	 *
@@ -12,16 +14,14 @@ function nav(&$a) {
 		App::$page['nav'] = '';
 
 	$base = z_root();
-    App::$page['htmlhead'] .= <<< EOT
 
+	App::$page['htmlhead'] .= <<< EOT
 <script>$(document).ready(function() {
 	$("#nav-search-text").search_autocomplete('$base/acl');
 });
 
 </script>
 EOT;
-
-
 
 	if(local_channel()) {
 		$channel = App::get_channel();
@@ -112,6 +112,7 @@ EOT;
 	}
 	else {
 		if(! get_account_id())  {
+			$nav['login'] = login();
 			$nav['loginmenu'][] = Array('login',t('Login'),'',t('Sign in'),'login_nav_btn');
 		}
 		else
@@ -128,6 +129,7 @@ EOT;
 	}
 
 	elseif(! $_SESSION['authenticated']) {
+		$nav['remote_login'] = remote_login();
 		$nav['loginmenu'][] = Array('rmagic',t('Remote authentication'),'',t('Click to authenticate to your home hub'),'rmagic_nav_btn');
 	}
 
@@ -234,11 +236,35 @@ EOT;
 	$x = array('nav' => $nav, 'usermenu' => $userinfo );
 	call_hooks('nav', $x);
 
-// Not sure the best place to put this on the page. So I'm implementing it but leaving it 
-// turned off until somebody discovers this and figures out a good location for it. 
-$powered_by = '';
+	// Not sure the best place to put this on the page. So I'm implementing it but leaving it 
+	// turned off until somebody discovers this and figures out a good location for it. 
+	$powered_by = '';
 
-//	$powered_by = '<strong>red<img class="smiley" src="' . z_root() . '/images/rm-16.png" alt="r#" />matrix</strong>';
+	// $powered_by = '<strong>red<img class="smiley" src="' . z_root() . '/images/rm-16.png" alt="r#" />matrix</strong>';
+
+
+	//app bin
+	$navapps = '';
+	if(get_config('system','experimental_app_bin')) {
+		if(local_channel()) {
+			//Zlib\Apps::import_system_apps();
+			$syslist = array();
+			$list = Zlib\Apps::app_list(local_channel(), false, $_GET['cat']);
+			if($list) {
+				foreach($list as $li) {
+					$syslist[] = Zlib\Apps::app_encode($li);
+				}
+			}
+			Zlib\Apps::translate_system_apps($syslist);
+		}
+		else {
+			$syslist = Zlib\Apps::get_system_apps(true);
+		}
+
+		$navapps = replace_macros(get_markup_template('navapps.tpl'), array(
+			'$apps' => $syslist
+		));
+	}
 
 	$tpl = get_markup_template('nav.tpl');
 
@@ -254,9 +280,9 @@ $powered_by = '';
 		'$sel' => 	App::$nav_sel,
 		'$powered_by' => $powered_by,
 		'$help' => t('@name, #tag, ?doc, content'),
-		'$pleasewait' => t('Please wait...')
+		'$pleasewait' => t('Please wait...'),
+		'$navapps' => $navapps
 	));
-
 
 	if(x($_SESSION, 'reload_avatar') && $observer) {
 		// The avatar has been changed on the server but the browser doesn't know that, 
