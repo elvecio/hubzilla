@@ -456,6 +456,7 @@ function widget_appcategories($arr) {
         where app_channel = %d
         and term.uid = app_channel
         and term.otype = %d
+        and term.term != 'nav_featured_app'
         order by term.term asc",
 		intval(local_channel()),
 	    intval(TERM_OBJ_APP)
@@ -521,9 +522,16 @@ function widget_affinity($arr) {
 
 	if(! local_channel())
 		return '';
-
-	$cmin = ((x($_REQUEST,'cmin')) ? intval($_REQUEST['cmin']) : 0);
-	$cmax = ((x($_REQUEST,'cmax')) ? intval($_REQUEST['cmax']) : 99);
+	
+	// Get default cmin value from pconfig, but allow GET parameter to override
+	$cmin = intval(get_pconfig(local_channel(),'affinity','cmin'));
+	$cmin = (($cmin) ? $cmin : 0);
+	$cmin = ((x($_REQUEST,'cmin')) ? intval($_REQUEST['cmin']) : $cmin);
+	
+	// Get default cmax value from pconfig, but allow GET parameter to override
+	$cmax = intval(get_pconfig(local_channel(),'affinity','cmax'));
+	$cmax = (($cmax) ? $cmax : 99);
+	$cmax = ((x($_REQUEST,'cmax')) ? intval($_REQUEST['cmax']) : $cmax);
 
 
 	if(feature_enabled(local_channel(),'affinity')) {

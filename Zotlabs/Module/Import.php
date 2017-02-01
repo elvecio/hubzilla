@@ -112,12 +112,12 @@ class Import extends \Zotlabs\Web\Controller {
 	//	print_r($data);
 	
 	
-		if(array_key_exists('user',$data) && array_key_exists('version',$data)) {
-			require_once('include/Import/import_diaspora.php');
-			import_diaspora($data);
-			return;
+		if(! array_key_exists('compatibility',$data)) {
+			call_hooks('import_foreign_channel_data',$data);
+			if($data['handled'])
+				return;
 		}
-		
+
 		$moving = intval($_REQUEST['moving']);
 		
 		if(array_key_exists('compatibility',$data) && array_key_exists('database',$data['compatibility'])) {
@@ -181,14 +181,15 @@ class Import extends \Zotlabs\Web\Controller {
 	
 		if($completed < 3) {
 	
-			if($data['photo']) {
-				require_once('include/photo/photo_driver.php');
-				import_channel_photo(base64url_decode($data['photo']['data']),$data['photo']['type'],$account_id,$channel['channel_id']);
+			if(array_key_exists('channel',$data)) {
+				if($data['photo']) {
+					require_once('include/photo/photo_driver.php');
+					import_channel_photo(base64url_decode($data['photo']['data']),$data['photo']['type'],$account_id,$channel['channel_id']);
+				}
+	
+				if(is_array($data['profile']))
+					import_profiles($channel,$data['profile']);
 			}
-	
-			if(is_array($data['profile']))
-				import_profiles($channel,$data['profile']);
-	
 			logger('import step 3');
 			$_SESSION['import_step'] = 3;
 		}
@@ -206,31 +207,35 @@ class Import extends \Zotlabs\Web\Controller {
 	
 		if($completed < 5) {
 			// create new hubloc for the new channel at this site
-	
-			$r = q("insert into hubloc ( hubloc_guid, hubloc_guid_sig, hubloc_hash, hubloc_addr, hubloc_network, hubloc_primary, 
-				hubloc_url, hubloc_url_sig, hubloc_host, hubloc_callback, hubloc_sitekey )
-				values ( '%s', '%s', '%s', '%s', '%s', %d, '%s', '%s', '%s', '%s', '%s' )",
-				dbesc($channel['channel_guid']),
-				dbesc($channel['channel_guid_sig']),
-				dbesc($channel['channel_hash']),
-				dbesc(channel_reddress($channel)),
-				dbesc('zot'),
-				intval(($seize) ? 1 : 0),
-				dbesc(z_root()),
-				dbesc(base64url_encode(rsa_sign(z_root(),$channel['channel_prvkey']))),
-				dbesc(\App::get_hostname()),
-				dbesc(z_root() . '/post'),
-				dbesc(get_config('system','pubkey'))
-			);
-		
-			// reset the original primary hubloc if it is being seized
-	
-			if($seize) {
-				$r = q("update hubloc set hubloc_primary = 0 where hubloc_primary = 1 and hubloc_hash = '%s' and hubloc_url != '%s' ",
-					dbesc($channel['channel_hash']),
-					dbesc(z_root())
+
+			if(array_key_exists('channel',$data)) {
+				$r = hubloc_store_lowlevel(
+					[
+						'hubloc_guid'     => $channel['channel_guid'],
+						'hubloc_guid_sig' => $channel['channel_guid_sig'],
+						'hubloc_hash'     => $channel['channel_hash'],
+						'hubloc_addr'     => channel_reddress($channel),
+						'hubloc_network'  => 'zot',
+						'hubloc_primary'  => (($seize) ? 1 : 0),
+						'hubloc_url'      => z_root(),
+						'hubloc_url_sig'  => base64url_encode(rsa_sign(z_root(),$channel['channel_prvkey'])),
+						'hubloc_host'     => \App::get_hostname(),
+						'hubloc_callback' => z_root() . '/post',
+						'hubloc_sitekey'  => get_config('system','pubkey'),
+						'hubloc_updated'  => datetime_convert()
+					]
 				);
+
+				// reset the original primary hubloc if it is being seized
+	
+				if($seize) {
+					$r = q("update hubloc set hubloc_primary = 0 where hubloc_primary = 1 and hubloc_hash = '%s' and hubloc_url != '%s' ",
+						dbesc($channel['channel_hash']),
+						dbesc(z_root())
+					);
+				}
 			}
+
 			logger('import step 5');
 			$_SESSION['import_step'] = 5;
 		}
@@ -240,32 +245,34 @@ class Import extends \Zotlabs\Web\Controller {
 	
 			// import xchans and contact photos
 	
-			if($seize) {
+			if(array_key_exists('channel',$data) && $seize) {
 	
 				// replace any existing xchan we may have on this site if we're seizing control
 	
 				$r = q("delete from xchan where xchan_hash = '%s'",
 					dbesc($channel['channel_hash'])
 				);
-	
-				$r = q("insert into xchan ( xchan_hash, xchan_guid, xchan_guid_sig, xchan_pubkey, xchan_photo_l, xchan_photo_m, xchan_photo_s, xchan_addr, xchan_url, xchan_follow, xchan_connurl, xchan_name, xchan_network, xchan_photo_date, xchan_name_date, xchan_hidden, xchan_orphan, xchan_censored, xchan_selfcensored, xchan_system, xchan_pubforum, xchan_deleted ) values ('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', %d, %d, %d, %d, %d, %d, %d )",
-					dbesc($channel['channel_hash']),
-					dbesc($channel['channel_guid']),
-					dbesc($channel['channel_guid_sig']),
-					dbesc($channel['channel_pubkey']),
-					dbesc(z_root() . "/photo/profile/l/" . $channel['channel_id']),
-					dbesc(z_root() . "/photo/profile/m/" . $channel['channel_id']),
-					dbesc(z_root() . "/photo/profile/s/" . $channel['channel_id']),
-					dbesc(channel_reddress($channel)),
-					dbesc(z_root() . '/channel/' . $channel['channel_address']),
-					dbesc(z_root() . '/follow?f=&url=%s'),
-					dbesc(z_root() . '/poco/' . $channel['channel_address']),
-					dbesc($channel['channel_name']),
-					dbesc('zot'),
-					dbesc(datetime_convert()),
-					dbesc(datetime_convert()),
-					0,0,0,0,0,0,0
-				);
+
+
+				$r = xchan_store_lowlevel(
+					[
+						'xchan_hash'           => $channel['channel_hash'],
+						'xchan_guid'           => $channel['channel_guid'],
+						'xchan_guid_sig'       => $channel['channel_guid_sig'],
+						'xchan_pubkey'         => $channel['channel_pubkey'],
+						'xchan_photo_l'        => z_root() . "/photo/profile/l/" . $channel['channel_id'],
+						'xchan_photo_m'        => z_root() . "/photo/profile/m/" . $channel['channel_id'],
+						'xchan_photo_s'        => z_root() . "/photo/profile/s/" . $channel['channel_id'],
+						'xchan_addr'           => channel_reddress($channel),
+						'xchan_url'            => z_root() . '/channel/' . $channel['channel_address'],
+						'xchan_connurl'        => z_root() . '/poco/' . $channel['channel_address'],
+						'xchan_follow'         => z_root() . '/follow?f=&url=%s',
+						'xchan_name'           => $channel['channel_name'],
+						'xchan_network'        => 'zot',
+						'xchan_photo_date'     => datetime_convert(),
+						'xchan_name_date'      => datetime_convert()
+					]
+				);	
 			}
 			logger('import step 6');
 			$_SESSION['import_step'] = 6;
@@ -324,9 +331,7 @@ class Import extends \Zotlabs\Web\Controller {
 			$_SESSION['import_step'] = 7;
 	
 		}
-	
-	
-	
+		
 		// FIXME - ensure we have an xchan if somebody is trying to pull a fast one
 	
 		if($completed < 8) {	
@@ -475,6 +480,9 @@ class Import extends \Zotlabs\Web\Controller {
 
 		if(is_array($data['wiki']))
 			import_items($channel,$data['wiki'],false,$relocate);
+
+		if(is_array($data['webpages']))
+			import_items($channel,$data['webpages'],false,$relocate);
 		
 		$addon = array('channel' => $channel,'data' => $data);
 		call_hooks('import_channel',$addon);

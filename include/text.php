@@ -4,7 +4,7 @@
  */
 
 require_once("include/bbcode.php");
-require_once('include/hubloc.php');
+
 
 // random string, there are 86 characters max in text mode, 128 for hex
 // output is urlsafe
@@ -3129,6 +3129,7 @@ function gen_link_id($mid) {
 		return 'b64.' . base64url_encode($mid);
 	return $mid;
 }
+
 
 // callback for array_walk
 
