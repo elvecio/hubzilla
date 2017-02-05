@@ -2106,16 +2106,12 @@ dl.bb-dl > dd > li {
 	text-align: center;
 }
 
-.rmagic-button {
-	padding-top: 10px;
-	margin-left: 10px;
-	margin-bottom: 10px;
+#nav-login {
 }
 
-#nav-login {
-	display: none;
-	width: 200px;
-	border: 1px solid #ccc;
-	border-radius: $radiuspx;
-
+.rmagic-button {
+	max-width: 400px;
+	margin-top: 20px;
+	margin-left: auto;
+	margin-right: auto;
 }

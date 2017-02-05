@@ -155,21 +155,9 @@
 			{{/if}}
 
 			{{if $nav.login && !$userinfo}}
-				<li class="nav-login hidden-xs">
-					<a onclick="openClose('nav-login'); return false;" href="#" title="{{$nav.loginmenu.0.3}}" id="{{$nav.loginmenu.0.4}}">{{$nav.loginmenu.0.1}} <span class="caret" id="loginmenu-caret"></span></a>
-					<div id="nav-login" class="login-dropdown-menu" style="display:none; width:150%;">
-					{{$nav.login}}
-					{{$nav.remote_login}}
-
-					<!--	{{foreach $nav.loginmenu as $loginmenu}}
-						<li role="presentation"><a class="{{$loginmenu.2}}" href="{{$loginmenu.0}}" title="{{$loginmenu.3}}" role="menuitem" id="{{$loginmenu.4}}">{{$loginmenu.1}}</a></li>
-						{{/foreach}} -->
-					</div>
+				<li class="">
+					<a href="#" title="{{$nav.loginmenu.1.3}}" id="{{$nav.loginmenu.1.4}}" data-toggle="modal" data-target="#nav-login">{{$nav.loginmenu.1.1}}</a>
 				</li>
-<!--				{{foreach $nav.loginmenu as $loginmenu}}
-				<li role="presentation"><a class="{{$loginmenu.2}} visible-xs" href="{{$loginmenu.0}}" title="{{$loginmenu.3}}" role="menuitem">{{$loginmenu.1}}</a></li>
-				{{/foreach}}
--->
 			{{/if}}
 
 			{{if $nav.register}}
@@ -233,6 +221,7 @@
 			{{$navapps}}
 		</div>
 	</div>
+
 	{{if $nav.help.6}}
 	<div id="contextual-help-content" class="contextual-help-content">
 		{{$nav.help.5}}
