@@ -146,8 +146,11 @@ class Apps {
 		$ret['type'] = 'system';
 
 		foreach($ret as $k => $v) {
-			if(strpos($v,'http') === 0)
-				$ret[$k] = zid($v);
+			if(strpos($v,'http') === 0) {
+				if(! (local_channel() && strpos($v,z_root()) === 0)) {
+					$ret[$k] = zid($v);
+				}
+			}
 		}
 
 		if(array_key_exists('desc',$ret))
@@ -259,6 +262,7 @@ class Apps {
 		 *    list: normal mode for viewing an app on the app page
 		 *       no buttons are shown
 		 *    edit: viewing the app page in editing mode provides a delete button
+		 *    nav: render apps for app-bin
 		 */
 
 		$installed = false;
@@ -280,8 +284,11 @@ class Apps {
 			$papp['url'] = z_root() . ((strpos($papp['url'],'/') === 0) ? '' : '/') . $papp['url'];
 
 		foreach($papp as $k => $v) {
-			if(strpos($v,'http') === 0 && $k != 'papp')
-				$papp[$k] = zid($v);
+			if(strpos($v,'http') === 0 && $k != 'papp') {
+				if(! (local_channel() && strpos($v,z_root()) === 0)) {
+					$papp[$k] = zid($v);
+				}
+			}
 			if($k === 'desc')
 				$papp['desc'] = str_replace(array('\'','"'),array('&#39;','&dquot;'),$papp['desc']);
 
@@ -339,8 +346,7 @@ class Apps {
 		}
 
 		$install_action = (($installed) ? t('Update') : t('Install'));
-		$icon = ((strpos($papp['photo'],'icon:') === 0) ? substr($papp['photo'],5) : ''); 
-
+		$icon = ((strpos($papp['photo'],'icon:') === 0) ? substr($papp['photo'],5) : '');
 
 		return replace_macros(get_markup_template('app.tpl'),array(
 			'$app' => $papp,
@@ -352,7 +358,9 @@ class Apps {
 			'$delete' => ((local_channel() && $installed && $mode == 'edit') ? t('Delete') : ''),
 			'$undelete' => ((local_channel() && $installed && $mode == 'edit') ? t('Undelete') : ''),
 			'$deleted' => $papp['deleted'],
-			'$featured' => ((strpos($papp['categories'], 'nav_featured_app') === false) ? false : true)
+			'$feature' => (($papp['embed']) ? false : true),
+			'$featured' => ((strpos($papp['categories'], 'nav_featured_app') === false) ? false : true),
+			'$navapps' => (($mode == 'nav') ? true : false)
 		));
 	}
 
@@ -451,13 +459,13 @@ class Apps {
 			intval($uid)
 		);
 
-		$x = q("select * from term where otype = %d and oid = %d limit 1",
+		$x = q("select * from term where otype = %d and oid = %d and term = 'nav_featured_app' limit 1",
 			intval(TERM_OBJ_APP),
 			intval($r[0]['id'])
 		);
 
 		if($x) {
-			q("delete from term where otype = %d and oid = %d",
+			q("delete from term where otype = %d and oid = %d and term = 'nav_featured_app'",
 				intval(TERM_OBJ_APP),
 				intval($x[0]['oid'])
 			);
@@ -504,6 +512,7 @@ class Apps {
 		$r = q("select * from app where app_channel = %d $sql_extra order by app_name asc",
 			intval($uid)
 		);
+
 		if($r) {
 			for($x = 0; $x < count($r); $x ++) {
 				if(! $r[$x]['app_system'])
@@ -514,6 +523,7 @@ class Apps {
 				);
 			}
 		}
+
 		return($r);
 	}
 
@@ -719,6 +729,9 @@ class Apps {
 		if($app['app_photo'])
 			$ret['photo'] = $app['app_photo'];
 
+		if($app['app_icon'])
+			$ret['icon'] = $app['app_icon'];
+
 		if($app['app_version'])
 			$ret['version'] = $app['app_version'];
 
@@ -756,6 +769,8 @@ class Apps {
 
 		if(! $embed)
 			return $ret;
+
+		$ret['embed'] = true;
 
 		if(array_key_exists('categories',$ret))
 			unset($ret['categories']);

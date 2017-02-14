@@ -252,7 +252,7 @@ header #banner #logo-text {
 	display: block;
 	position: fixed;
 	top: 51px;
-	width: 100%;
+	left: 0px;
 	max-height: 50%;
 	background: $comment_item_colour;
 	padding: 20px;
@@ -1188,6 +1188,16 @@ margin-right: 50px;
 	color: $toolicon_colour;
 }
 
+.generic-icons-nav {
+	font-size: 1.2em;
+	margin-right: 7px;
+}
+
+nav .navbar-collapse.in .generic-icons,
+nav .navbar-collapse.collapsing .generic-icons {
+	color: $nav_active_icon_colour;
+}
+
 .admin-icons {
 	font-size: 1.2em;
 	color: $toolicon_colour;
@@ -1524,7 +1534,6 @@ img.mail-conv-sender-photo {
 
 /* nav bootstrap */
 
-
 nav img {
 	border-radius: $radiuspx;
 }
@@ -1747,22 +1756,11 @@ blockquote {
 	border-radius: $radiuspx;
 }
 
-nav .badge:hover {
-	background-color: #999;
-}
-
 nav .badge.home-update,
 nav .badge.notify-update,
 nav .badge.intro-update,
 nav .badge.mail-update {
-	background-color:#C9302C;
-}
-
-nav .badge.home-update:hover,
-nav .badge.notify-update:hover,
-nav .badge.intro-update:hover,
-nav .badge.mail-update:hover {
-	background-color:#D9534F;
+	background-color: #C9302C;
 }
 
 .dropdown-menu {
@@ -1830,7 +1828,9 @@ nav .badge.mail-update:hover {
 #expand-aside,
 #expand-tabs,
 #doco-return-to-top-btn,
-#context-help-btn {
+#context-help-btn,
+#notifications-btn,
+#login_nav_btn_collapse {
 	color: $nav_active_icon_colour;
 	padding: 7px 10px;
 }
@@ -2103,15 +2103,20 @@ dl.bb-dl > dd > li {
 
 .app-icon {
 	font-size: 80px;
+	color: $toolicon_colour;
+	text-shadow: 3px 3px 3px lightgrey;
+}
+
+.app-detail {
 	text-align: center;
 }
 
-#nav-login {
-}
-
-.rmagic-button {
+#login-main, .rmagic-button {
 	max-width: 400px;
 	margin-top: 20px;
 	margin-left: auto;
 	margin-right: auto;
+}
+#permcat-index {
+	margin: 10px;
 }
