@@ -79,12 +79,11 @@ define ( 'DIRECTORY_MODE_STANDALONE',  0x0100); // A detached (off the grid) hub
 // point to go out and find the rest of the world.
 
 define ( 'DIRECTORY_REALM',            'RED_GLOBAL');
-define ( 'DIRECTORY_FALLBACK_MASTER',  'https://hub.pixelbits.de');
+define ( 'DIRECTORY_FALLBACK_MASTER',  'https://gravizot.de');
 
 $DIRECTORY_FALLBACK_SERVERS = array( 
 	'https://hubzilla.site',
 	'https://hubzilla.zottel.net',
-	'https://hub.pixelbits.de',
 	'https://my.federated.social',
 	'https://hubzilla.nl',
 	'https://gravizot.de'
@@ -2226,7 +2225,7 @@ function construct_page(&$a) {
 	// Zotlabs\Render\Theme::debug();
 
 	if (($p = theme_include($current_theme[0] . '.js')) != '')
-		head_add_js($p);
+		head_add_js('/' . $p);
 
 	if (($p = theme_include('mod_' . App::$module . '.php')) != '')
 		require_once($p);
@@ -2238,10 +2237,13 @@ function construct_page(&$a) {
 	else
 		head_add_css(((x(App::$page, 'template')) ? App::$page['template'] : 'default' ) . '.css');
 
-	head_add_css('mod_' . App::$module . '.css');
+	if (($p = theme_include('mod_' . App::$module . '.css')) != '')
+		head_add_css('mod_' . App::$module . '.css');
+
 	head_add_css(Zotlabs\Render\Theme::url($installing));
 
-	head_add_js('mod_' . App::$module . '.js');
+	if (($p = theme_include('mod_' . App::$module . '.js')) != '')
+		head_add_js('mod_' . App::$module . '.js');
 
 	App::build_pagehead();
 

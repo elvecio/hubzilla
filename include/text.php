@@ -586,8 +586,10 @@ function photo_new_resource() {
  * @return boolean true if found
  */
 function attribute_contains($attr, $s) {
+	// remove quotes
+	$attr = str_replace([ '"',"'" ],['',''],$attr);
 	$a = explode(' ', $attr);
-	if(count($a) && in_array($s, $a))
+	if($a && in_array($s, $a))
 		return true;
 
 	return false;
@@ -1580,11 +1582,6 @@ function prepare_body(&$item,$attach = false) {
 	$s = $prep_arr['html'];
 	$photo = $prep_arr['photo'];
 	$event = $prep_arr['event'];
-
-//	q("update item set html = '%s' where id = %d",
-//		dbesc($s),
-//		intval($item['id'])
-//	);
 
 	if(! $attach) {
 		return $s;
