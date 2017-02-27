@@ -1477,18 +1477,34 @@ function find_folder_hash_by_attach_hash($channel_id, $attachHash, $recurse = fa
 
 function find_folder_hash_by_path($channel_id, $path) {
 
-	$filename = end(explode('/', $path));
+	if(! $path)
+		return '';
 
-	$r = q("SELECT hash FROM attach WHERE uid = %d AND filename = '%s' LIMIT 1",
-		intval($channel_id),
-		dbesc($filename)
-	);
+	$comps        = explode('/',$path);
+	$errors       = false;
+	$parent_hash  = '';
 
-	$hash = '';
-	if($r && $r[0]['hash']) {
-		$hash = $r[0]['hash'];
+	for($x = 0; $x < count($comps); $x ++) {
+		$element = $comps[$x];
+		$r = q("SELECT hash FROM attach WHERE uid = %d AND filename = '%s' AND folder = '%s' LIMIT 1",
+			intval($channel_id),
+			dbesc($element),
+			dbesc($parent_hash)
+		);
+		if($r) {
+			$parent_hash = $r[0]['hash'];
+		}
+		else {
+			$errors ++;
+			break;
+		}
 	}
-	return $hash;
+
+	if($errors)
+		return '';
+
+	return $parent_hash;
+
 }
 
 /**

@@ -48,13 +48,21 @@ class NativeWikiPage {
 
 		$w = Zlib\NativeWiki::get_wiki($channel_id, $observer_hash, $resource_id);
 
+		if (! $w['wiki']) {
+			return array('content' => null, 'message' => 'Error reading wiki', 'success' => false);
+		}
+
 		// create an empty activity
 
 		$arr = [];
-		$arr['uid'] = $channel_id;
-		$arr['author_xchan'] = $observer_hash;
+		$arr['uid']           = $channel_id;
+		$arr['author_xchan']  = $observer_hash;
 		$arr['resource_type'] = 'nwikipage';
-		$arr['resource_id'] = $resource_id;
+		$arr['resource_id']   = $resource_id;
+		$arr['allow_cid']     = $w['wiki']['allow_cid'];
+		$arr['allow_gid']     = $w['wiki']['allow_gid'];
+		$arr['deny_cid']      = $w['wiki']['deny_cid'];
+		$arr['deny_gid']      = $w['wiki']['deny_gid'];
 
 		// We may wish to change this some day.
 		$arr['item_unpublished'] = 1;
@@ -325,17 +333,25 @@ class NativeWikiPage {
 	
 	static public function save_page($arr) {
 
-		$pageUrlName = ((array_key_exists('pageUrlName',$arr)) ? $arr['pageUrlName'] : '');
-		$content = ((array_key_exists('content',$arr)) ? purify_html(Zlib\NativeWikiPage::prepare_content($arr['content'])) : '');
-		$resource_id = ((array_key_exists('resource_id',$arr)) ? $arr['resource_id'] : '');
+		$pageUrlName   = ((array_key_exists('pageUrlName',$arr))   ? $arr['pageUrlName']   : '');
+		$content       = ((array_key_exists('content',$arr))       ? $arr['content']       : '');
+		$resource_id   = ((array_key_exists('resource_id',$arr))   ? $arr['resource_id']   : '');
 		$observer_hash = ((array_key_exists('observer_hash',$arr)) ? $arr['observer_hash'] : '');
 		$channel_id    = ((array_key_exists('channel_id',$arr))    ? $arr['channel_id']    : 0);
-		$revision = ((array_key_exists('revision',$arr))    ? $arr['revision']    : 0);
+		$revision      = ((array_key_exists('revision',$arr))      ? $arr['revision']      : 0);
 
 		$w = Zlib\NativeWiki::get_wiki($channel_id, $observer_hash, $resource_id);
 
 		if (!$w['wiki']) {
 			return array('message' => t('Error reading wiki'), 'success' => false);
+		}
+
+		$mimetype = $w['mimeType'];
+		if($mimetype === 'text/markdown') {
+			$content = purify_html(Zlib\NativeWikiPage::prepare_content($content));
+		}
+		else {
+			$content = escape_tags($content);
 		}
 	
 		// fetch the most recently saved revision. 

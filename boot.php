@@ -50,7 +50,7 @@ require_once('include/hubloc.php');
 
 
 define ( 'PLATFORM_NAME',           'hubzilla' );
-define ( 'STD_VERSION',             '2.1' );
+define ( 'STD_VERSION',             '2.3' );
 define ( 'ZOT_REVISION',            '1.2' );
 
 define ( 'DB_UPDATE_VERSION',       1188  );
@@ -1383,6 +1383,24 @@ function os_mkdir($path, $mode = 0777, $recursive = false) {
 	@umask($oldumask);
 	return $result; 
 }
+
+
+// recursively delete a directory
+function rrmdir($path) {
+	if(is_dir($path) === true) {
+		$files = array_diff(scandir($path), array('.', '..'));
+		foreach($files as $file) {
+			rrmdir(realpath($path) . '/' . $file);
+		}
+		return rmdir($path);
+	}
+	elseif(is_file($path) === true) {
+		return unlink($path);
+	}
+
+	return false;
+}
+
 
 /**
  * @brief Function to check if request was an AJAX (xmlhttprequest) request.

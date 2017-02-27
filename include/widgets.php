@@ -96,20 +96,6 @@ function widget_collections($args) {
 	return group_side($every, $each, $edit, $current, $abook_id, $wmode);
 }
 
-
-function widget_appselect($arr) {
-	return replace_macros(get_markup_template('app_select.tpl'),array(
-		'$title' => t('Apps'),
-		'$system' => t('System'),
-		'$authed' => ((local_channel()) ? true : false),
-		'$personal' => t('Personal'),
-		'$new' => t('New App'),
-		'$edit' => t('Edit Apps'),
-		'$cat' => ((array_key_exists('cat',$_REQUEST)) ? $_REQUEST['cat'] : '')
-	));
-}
-
-
 function widget_suggestions($arr) {
 
 	if((! local_channel()) || (! feature_enabled(local_channel(),'suggest')))
@@ -959,7 +945,7 @@ function widget_wiki_pages($arr) {
 			}
 		}
 	}
-	$can_create = perm_is_allowed(\App::$profile['uid'],get_observer_hash(),'write_pages');
+	$can_create = perm_is_allowed(\App::$profile['uid'],get_observer_hash(),'write_wiki');
 
 	$can_delete = ((local_channel() && (local_channel() == \App::$profile['uid'])) ? true : false);
 
@@ -1580,7 +1566,7 @@ function widget_admin($arr) {
 	 */
 
 	if(! is_site_admin()) {
-		return login(false);
+		return '';
 	}
 
 	$o = '';
