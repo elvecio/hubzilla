@@ -21,6 +21,10 @@ class ComposerStaticInit7b34d7e50a62201ec5d5e526a5b8b35d
         array (
             'Zotlabs\\' => 8,
         ),
+        'T' => 
+        array (
+            'Test\\Markdownify\\' => 17,
+        ),
         'S' => 
         array (
             'Sabre\\Xml\\' => 10,
@@ -37,6 +41,10 @@ class ComposerStaticInit7b34d7e50a62201ec5d5e526a5b8b35d
         array (
             'Psr\\Log\\' => 8,
         ),
+        'M' => 
+        array (
+            'Markdownify\\' => 12,
+        ),
         'H' => 
         array (
             'Hubzilla\\' => 9,
@@ -47,6 +55,10 @@ class ComposerStaticInit7b34d7e50a62201ec5d5e526a5b8b35d
         'Zotlabs\\' => 
         array (
             0 => __DIR__ . '/../..' . '/Zotlabs',
+        ),
+        'Test\\Markdownify\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/pixel418/markdownify/test',
         ),
         'Sabre\\Xml\\' => 
         array (
@@ -88,14 +100,34 @@ class ComposerStaticInit7b34d7e50a62201ec5d5e526a5b8b35d
         array (
             0 => __DIR__ . '/..' . '/psr/log/Psr/Log',
         ),
+        'Markdownify\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/pixel418/markdownify/src',
+        ),
         'Hubzilla\\' => 
         array (
             0 => __DIR__ . '/../..' . '/include',
         ),
     );
 
+    public static $prefixesPsr0 = array (
+        'M' => 
+        array (
+            'Michelf' => 
+            array (
+                0 => __DIR__ . '/..' . '/michelf/php-markdown',
+            ),
+        ),
+    );
+
     public static $classMap = array (
         'Hubzilla\\Import\\Import' => __DIR__ . '/../..' . '/include/Import/Importer.php',
+        'Markdownify\\Converter' => __DIR__ . '/..' . '/pixel418/markdownify/src/Converter.php',
+        'Markdownify\\ConverterExtra' => __DIR__ . '/..' . '/pixel418/markdownify/src/ConverterExtra.php',
+        'Markdownify\\Parser' => __DIR__ . '/..' . '/pixel418/markdownify/src/Parser.php',
+        'Michelf\\Markdown' => __DIR__ . '/..' . '/michelf/php-markdown/Michelf/Markdown.php',
+        'Michelf\\MarkdownExtra' => __DIR__ . '/..' . '/michelf/php-markdown/Michelf/MarkdownExtra.php',
+        'Michelf\\MarkdownInterface' => __DIR__ . '/..' . '/michelf/php-markdown/Michelf/MarkdownInterface.php',
         'Psr\\Log\\AbstractLogger' => __DIR__ . '/..' . '/psr/log/Psr/Log/AbstractLogger.php',
         'Psr\\Log\\InvalidArgumentException' => __DIR__ . '/..' . '/psr/log/Psr/Log/InvalidArgumentException.php',
         'Psr\\Log\\LogLevel' => __DIR__ . '/..' . '/psr/log/Psr/Log/LogLevel.php',
@@ -104,6 +136,8 @@ class ComposerStaticInit7b34d7e50a62201ec5d5e526a5b8b35d
         'Psr\\Log\\LoggerInterface' => __DIR__ . '/..' . '/psr/log/Psr/Log/LoggerInterface.php',
         'Psr\\Log\\LoggerTrait' => __DIR__ . '/..' . '/psr/log/Psr/Log/LoggerTrait.php',
         'Psr\\Log\\NullLogger' => __DIR__ . '/..' . '/psr/log/Psr/Log/NullLogger.php',
+        'Psr\\Log\\Test\\DummyTest' => __DIR__ . '/..' . '/psr/log/Psr/Log/Test/LoggerInterfaceTest.php',
+        'Psr\\Log\\Test\\LoggerInterfaceTest' => __DIR__ . '/..' . '/psr/log/Psr/Log/Test/LoggerInterfaceTest.php',
         'Sabre\\CalDAV\\Backend\\AbstractBackend' => __DIR__ . '/..' . '/sabre/dav/lib/CalDAV/Backend/AbstractBackend.php',
         'Sabre\\CalDAV\\Backend\\BackendInterface' => __DIR__ . '/..' . '/sabre/dav/lib/CalDAV/Backend/BackendInterface.php',
         'Sabre\\CalDAV\\Backend\\NotificationSupport' => __DIR__ . '/..' . '/sabre/dav/lib/CalDAV/Backend/NotificationSupport.php',
@@ -442,10 +476,14 @@ class ComposerStaticInit7b34d7e50a62201ec5d5e526a5b8b35d
         'Sabre\\Xml\\Writer' => __DIR__ . '/..' . '/sabre/xml/lib/Writer.php',
         'Sabre\\Xml\\XmlDeserializable' => __DIR__ . '/..' . '/sabre/xml/lib/XmlDeserializable.php',
         'Sabre\\Xml\\XmlSerializable' => __DIR__ . '/..' . '/sabre/xml/lib/XmlSerializable.php',
+        'Test\\Markdownify\\ConverterExtraTest' => __DIR__ . '/..' . '/pixel418/markdownify/test/ConverterExtraTest.php',
+        'Test\\Markdownify\\ConverterTest' => __DIR__ . '/..' . '/pixel418/markdownify/test/ConverterTest.php',
+        'Test\\Markdownify\\ConverterTestCase' => __DIR__ . '/..' . '/pixel418/markdownify/test/ConverterTestCase.php',
         'Zotlabs\\Access\\AccessList' => __DIR__ . '/../..' . '/Zotlabs/Access/AccessList.php',
         'Zotlabs\\Access\\PermissionLimits' => __DIR__ . '/../..' . '/Zotlabs/Access/PermissionLimits.php',
         'Zotlabs\\Access\\PermissionRoles' => __DIR__ . '/../..' . '/Zotlabs/Access/PermissionRoles.php',
         'Zotlabs\\Access\\Permissions' => __DIR__ . '/../..' . '/Zotlabs/Access/Permissions.php',
+        'Zotlabs\\Daemon\\Addon' => __DIR__ . '/../..' . '/Zotlabs/Daemon/Addon.php',
         'Zotlabs\\Daemon\\Checksites' => __DIR__ . '/../..' . '/Zotlabs/Daemon/Checksites.php',
         'Zotlabs\\Daemon\\Cli_suggest' => __DIR__ . '/../..' . '/Zotlabs/Daemon/Cli_suggest.php',
         'Zotlabs\\Daemon\\Cron' => __DIR__ . '/../..' . '/Zotlabs/Daemon/Cron.php',
@@ -480,7 +518,10 @@ class ComposerStaticInit7b34d7e50a62201ec5d5e526a5b8b35d
         'Zotlabs\\Lib\\Enotify' => __DIR__ . '/../..' . '/Zotlabs/Lib/Enotify.php',
         'Zotlabs\\Lib\\ExtendedZip' => __DIR__ . '/../..' . '/Zotlabs/Lib/ExtendedZip.php',
         'Zotlabs\\Lib\\IConfig' => __DIR__ . '/../..' . '/Zotlabs/Lib/IConfig.php',
+        'Zotlabs\\Lib\\NativeWiki' => __DIR__ . '/../..' . '/Zotlabs/Lib/NativeWiki.php',
+        'Zotlabs\\Lib\\NativeWikiPage' => __DIR__ . '/../..' . '/Zotlabs/Lib/NativeWikiPage.php',
         'Zotlabs\\Lib\\PConfig' => __DIR__ . '/../..' . '/Zotlabs/Lib/PConfig.php',
+        'Zotlabs\\Lib\\Permcat' => __DIR__ . '/../..' . '/Zotlabs/Lib/Permcat.php',
         'Zotlabs\\Lib\\PermissionDescription' => __DIR__ . '/../..' . '/Zotlabs/Lib/PermissionDescription.php',
         'Zotlabs\\Lib\\ProtoDriver' => __DIR__ . '/../..' . '/Zotlabs/Lib/ProtoDriver.php',
         'Zotlabs\\Lib\\SuperCurl' => __DIR__ . '/../..' . '/Zotlabs/Lib/SuperCurl.php',
@@ -539,7 +580,6 @@ class ComposerStaticInit7b34d7e50a62201ec5d5e526a5b8b35d
         'Zotlabs\\Module\\Events' => __DIR__ . '/../..' . '/Zotlabs/Module/Events.php',
         'Zotlabs\\Module\\Fbrowser' => __DIR__ . '/../..' . '/Zotlabs/Module/Fbrowser.php',
         'Zotlabs\\Module\\Feed' => __DIR__ . '/../..' . '/Zotlabs/Module/Feed.php',
-        'Zotlabs\\Module\\Ffsapi' => __DIR__ . '/../..' . '/Zotlabs/Module/Ffsapi.php',
         'Zotlabs\\Module\\Fhublocs' => __DIR__ . '/../..' . '/Zotlabs/Module/Fhublocs.php',
         'Zotlabs\\Module\\File_upload' => __DIR__ . '/../..' . '/Zotlabs/Module/File_upload.php',
         'Zotlabs\\Module\\Filer' => __DIR__ . '/../..' . '/Zotlabs/Module/Filer.php',
@@ -568,7 +608,6 @@ class ComposerStaticInit7b34d7e50a62201ec5d5e526a5b8b35d
         'Zotlabs\\Module\\Magic' => __DIR__ . '/../..' . '/Zotlabs/Module/Magic.php',
         'Zotlabs\\Module\\Mail' => __DIR__ . '/../..' . '/Zotlabs/Module/Mail.php',
         'Zotlabs\\Module\\Manage' => __DIR__ . '/../..' . '/Zotlabs/Module/Manage.php',
-        'Zotlabs\\Module\\Match' => __DIR__ . '/../..' . '/Zotlabs/Module/Match.php',
         'Zotlabs\\Module\\Menu' => __DIR__ . '/../..' . '/Zotlabs/Module/Menu.php',
         'Zotlabs\\Module\\Message' => __DIR__ . '/../..' . '/Zotlabs/Module/Message.php',
         'Zotlabs\\Module\\Mitem' => __DIR__ . '/../..' . '/Zotlabs/Module/Mitem.php',
@@ -583,10 +622,10 @@ class ComposerStaticInit7b34d7e50a62201ec5d5e526a5b8b35d
         'Zotlabs\\Module\\Oep' => __DIR__ . '/../..' . '/Zotlabs/Module/Oep.php',
         'Zotlabs\\Module\\Oexchange' => __DIR__ . '/../..' . '/Zotlabs/Module/Oexchange.php',
         'Zotlabs\\Module\\Online' => __DIR__ . '/../..' . '/Zotlabs/Module/Online.php',
-        'Zotlabs\\Module\\Opensearch' => __DIR__ . '/../..' . '/Zotlabs/Module/Opensearch.php',
         'Zotlabs\\Module\\Page' => __DIR__ . '/../..' . '/Zotlabs/Module/Page.php',
         'Zotlabs\\Module\\Pconfig' => __DIR__ . '/../..' . '/Zotlabs/Module/Pconfig.php',
         'Zotlabs\\Module\\Pdledit' => __DIR__ . '/../..' . '/Zotlabs/Module/Pdledit.php',
+        'Zotlabs\\Module\\Permcat' => __DIR__ . '/../..' . '/Zotlabs/Module/Permcat.php',
         'Zotlabs\\Module\\Photo' => __DIR__ . '/../..' . '/Zotlabs/Module/Photo.php',
         'Zotlabs\\Module\\Photos' => __DIR__ . '/../..' . '/Zotlabs/Module/Photos.php',
         'Zotlabs\\Module\\Ping' => __DIR__ . '/../..' . '/Zotlabs/Module/Ping.php',
@@ -616,7 +655,6 @@ class ComposerStaticInit7b34d7e50a62201ec5d5e526a5b8b35d
         'Zotlabs\\Module\\Removeme' => __DIR__ . '/../..' . '/Zotlabs/Module/Removeme.php',
         'Zotlabs\\Module\\Rmagic' => __DIR__ . '/../..' . '/Zotlabs/Module/Rmagic.php',
         'Zotlabs\\Module\\Rpost' => __DIR__ . '/../..' . '/Zotlabs/Module/Rpost.php',
-        'Zotlabs\\Module\\Rsd_xml' => __DIR__ . '/../..' . '/Zotlabs/Module/Rsd_xml.php',
         'Zotlabs\\Module\\Search' => __DIR__ . '/../..' . '/Zotlabs/Module/Search.php',
         'Zotlabs\\Module\\Search_ac' => __DIR__ . '/../..' . '/Zotlabs/Module/Search_ac.php',
         'Zotlabs\\Module\\Service_limits' => __DIR__ . '/../..' . '/Zotlabs/Module/Service_limits.php',
@@ -627,6 +665,7 @@ class ComposerStaticInit7b34d7e50a62201ec5d5e526a5b8b35d
         'Zotlabs\\Module\\Settings\\Featured' => __DIR__ . '/../..' . '/Zotlabs/Module/Settings/Featured.php',
         'Zotlabs\\Module\\Settings\\Features' => __DIR__ . '/../..' . '/Zotlabs/Module/Settings/Features.php',
         'Zotlabs\\Module\\Settings\\Oauth' => __DIR__ . '/../..' . '/Zotlabs/Module/Settings/Oauth.php',
+        'Zotlabs\\Module\\Settings\\Permcats' => __DIR__ . '/../..' . '/Zotlabs/Module/Settings/Permcats.php',
         'Zotlabs\\Module\\Settings\\Tokens' => __DIR__ . '/../..' . '/Zotlabs/Module/Settings/Tokens.php',
         'Zotlabs\\Module\\Setup' => __DIR__ . '/../..' . '/Zotlabs/Module/Setup.php',
         'Zotlabs\\Module\\Share' => __DIR__ . '/../..' . '/Zotlabs/Module/Share.php',
@@ -687,6 +726,7 @@ class ComposerStaticInit7b34d7e50a62201ec5d5e526a5b8b35d
         'Zotlabs\\Text\\Tagadelic' => __DIR__ . '/../..' . '/Zotlabs/Text/Tagadelic.php',
         'Zotlabs\\Web\\CheckJS' => __DIR__ . '/../..' . '/Zotlabs/Web/CheckJS.php',
         'Zotlabs\\Web\\Controller' => __DIR__ . '/../..' . '/Zotlabs/Web/Controller.php',
+        'Zotlabs\\Web\\HTTPHeaders' => __DIR__ . '/../..' . '/Zotlabs/Web/HTTPHeaders.php',
         'Zotlabs\\Web\\HttpMeta' => __DIR__ . '/../..' . '/Zotlabs/Web/HttpMeta.php',
         'Zotlabs\\Web\\Router' => __DIR__ . '/../..' . '/Zotlabs/Web/Router.php',
         'Zotlabs\\Web\\Session' => __DIR__ . '/../..' . '/Zotlabs/Web/Session.php',
@@ -707,6 +747,7 @@ class ComposerStaticInit7b34d7e50a62201ec5d5e526a5b8b35d
         return \Closure::bind(function () use ($loader) {
             $loader->prefixLengthsPsr4 = ComposerStaticInit7b34d7e50a62201ec5d5e526a5b8b35d::$prefixLengthsPsr4;
             $loader->prefixDirsPsr4 = ComposerStaticInit7b34d7e50a62201ec5d5e526a5b8b35d::$prefixDirsPsr4;
+            $loader->prefixesPsr0 = ComposerStaticInit7b34d7e50a62201ec5d5e526a5b8b35d::$prefixesPsr0;
             $loader->classMap = ComposerStaticInit7b34d7e50a62201ec5d5e526a5b8b35d::$classMap;
 
         }, null, ClassLoader::class);

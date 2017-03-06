@@ -3,8 +3,9 @@
  * @file include/text.php
  */
 
-require_once("include/bbcode.php");
+use \Michelf\MarkdownExtra;
 
+require_once("include/bbcode.php");
 
 // random string, there are 86 characters max in text mode, 128 for hex
 // output is urlsafe
@@ -853,6 +854,11 @@ function tag_sort_length($a,$b) {
 	return((mb_strlen($b) < mb_strlen($a)) ? (-1) : 1);
 }
 
+function total_sort($a,$b) {
+	if($a['total'] == $b['total'])
+		return 0;
+	return(($b['total'] > $a['total']) ? 1 : (-1));
+}
 
 
 /**
@@ -1217,20 +1223,6 @@ function list_smilies() {
 		'<img class="smiley" src="' . z_root() . '/images/hz-16.png" alt=":hubzilla" />',
 
 	);
-
-	$x = get_config('feature','emoji');
-	if($x === false)
-		$x = 1;
-	if($x) {
-		if(! App::$emojitab)
-			App::$emojitab = json_decode(file_get_contents('library/emoji.json'),true);
-		foreach(App::$emojitab as $e) {
-			if(strpos($e['shortname'],':tone') === 0)
-				continue;
-			$texts[] = $e['shortname'];
-			$icons[] = '<img class="smiley emoji" height="16" width="16" src="images/emoji/' . $e['unicode'] . '.png' . '" alt="' . $e['name'] . '" />';
-		}
-	}
 
 	$params = array('texts' => $texts, 'icons' => $icons);
 	call_hooks('smilie', $params);
@@ -1650,8 +1642,7 @@ function prepare_text($text, $content_type = 'text/bbcode', $cache = false) {
 			break;
 
 		case 'text/markdown':
-			require_once('library/markdown.php');
-			$s = Markdown($text);
+			$s = MarkdownExtra::defaultTransform($text);
 			break;
 
 		case 'application/x-pdl';
@@ -2062,7 +2053,7 @@ function ids_to_array($arr,$idx = 'id') {
 	$t = array();
 	if($arr) {
 		foreach($arr as $x) {
-			if(array_key_exists($idx,$x) && strlen($x[$idx]) && (! in_array($x[$idx],$t))) {			
+			if(array_key_exists($idx,$x) && strlen($x[$idx]) && (! in_array($x[$idx],$t))) {
 				$t[] = $x[$idx];
 			}
 		}
@@ -2078,7 +2069,7 @@ function ids_to_querystr($arr,$idx = 'id',$quote = false) {
 	if($arr) {
 		foreach($arr as $x) {
 			if(! in_array($x[$idx],$t)) {
-				if($quote) 
+				if($quote)
 					$t[] = "'" . dbesc($x[$idx]) . "'";
 				else
 					$t[] = $x[$idx];
