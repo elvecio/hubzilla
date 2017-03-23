@@ -107,7 +107,8 @@ class Wiki extends \Zotlabs\Web\Controller {
 		}
 
 		$is_owner = ((local_channel()) && (local_channel() == \App::$profile['profile_uid']) ? true : false);
-		$o = profile_tabs($a, $is_owner, \App::$profile['channel_address']);
+		//$o = profile_tabs($a, $is_owner, \App::$profile['channel_address']);
+		$o = '';
 
 		// Download a wiki
 /*
@@ -327,9 +328,8 @@ class Wiki extends \Zotlabs\Web\Controller {
 				$html = Zlib\NativeWikiPage::convert_links(zidify_links(smilies(bbcode($content))),$wikiURL);
 			}
 			else {
-				require_once('library/markdown.php');
 				$content = Zlib\NativeWikiPage::bbcode($content);
-				$html = Zlib\NativeWikiPage::generate_toc(zidify_text(purify_html(Markdown($content))));
+				$html = Zlib\NativeWikiPage::generate_toc(zidify_text(purify_html(MarkdownExtra::defaultTransform($content))));
 				$html = Zlib\NativeWikiPage::convert_links($html,$wikiURL);
 			}
 			json_return_and_die(array('html' => $html, 'success' => true));
