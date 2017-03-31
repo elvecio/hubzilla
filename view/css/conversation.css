@@ -128,6 +128,10 @@ a.wall-item-name-link {
 	word-wrap: break-word;
 }
 
+.wall-item-title.bg-primary a {
+	color: #fff;
+}
+
 .wall-item-body {
 	word-wrap: break-word;
 }
@@ -182,19 +186,20 @@ a.wall-item-name-link {
 .comment-edit-text-empty,
 .comment-edit-text-full {
 	padding: 0.5rem;
-	line-height: 1.25;
 	width: 100%;
 	display: inherit;
 }
 
 .comment-edit-text-empty {
-	height: 2.25rem;
+	height: 2rem;
+	line-height: 1;
 	overflow: hidden;
 	resize: none;
 }
 
 .comment-edit-text-full {
 	height: 7rem;
+	line-height: 1.25;
 	overflow: auto;
 	resize: vertical;
 }

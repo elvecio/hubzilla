@@ -78,9 +78,16 @@ h6, .h6 {
 }
 
 #banner {
+	color: $banner_colour;
+	font-weight: bold;
 	white-space: nowrap;
 	overflow: hidden;
 	text-overflow: ellipsis;
+}
+
+#banner img {
+	max-height: 1.35rem;
+	width: auto;
 }
 
 .jslider {
@@ -92,10 +99,6 @@ abbr {
 }
 
 /* icons */
-.tool-icons,
-.cat-icons {
-	color: $toolicon_colour;
-}
 
 a,
 .fakelink {
@@ -188,12 +191,12 @@ nav {
 .contextual-help-content-open {
 	display: block;
 	position: fixed;
-	top: 3.25rem;
+	top: 3.35rem;
 	left: 0px;
 	width: 100%;
 	max-height: 50%;
 	background: $comment_item_colour;
-	padding: 20px;
+	padding: 1rem;
 	border-bottom: #ccc 1px solid;
 	overflow: auto;
 	-moz-box-shadow: 0px 3px 3px rgba(0,0,0,0.2);
@@ -257,21 +260,6 @@ footer {
 	margin: 15px 0px;
 }
 
-/*TODO: we should use one class for all this. */
-
-.group-selected,
-.fileas-selected,
-.categories-selected,
-.search-selected,
-.active,
-.group-selected:hover,
-.fileas-selected:hover,
-.categories-selected:hover,
-.search-selected:hover,
-.active:hover {
-	color: $font_colour;
-}
-
 #cropimage-wrapper, #cropimage-preview-wrapper {
 	float: left;
 	padding: 30px;
@@ -293,8 +281,6 @@ footer {
 	padding: 0px 10px 10px 10px;
 	background-color: rgba(254,254,254,0.5);
 	border: 1px solid rgba(254,254,254,0.5);
-	-moz-border-radius: $radius;
-	-webkit-border-radius: $radius;
 	border-radius: $radius;
 	word-wrap: break-word;
 }
@@ -388,7 +374,6 @@ footer {
 .photo,
 .contact-block-img {
 	border-radius: $radius;
-	-moz-border-radius: $radius;
 	box-shadow: $shadowpx $shadowpx $shadowpx 0 #444444;
 }
 
@@ -403,7 +388,6 @@ footer {
 .profile-match-photo img,
 .directory-photo-img {
 	border-radius: $radius;
-	-moz-border-radius: $radius;
 	box-shadow: $shadowpx $shadowpx $shadowpx 0 #444444;
 }
 
@@ -709,39 +693,6 @@ div.jGrowl div.jGrowl-notification {
     min-height: 60px;
 }
 
-#recip-ac .autocomplete,
-#poke-recip-ac .autocomplete,
-#id-name-ac .autocomplete,
-#contact-search-ac .autocomplete {
-	margin-top: 2px;
-	margin-left: $radius;
-	margin-right: $radius;
-	border: 1px solid #666;
-	border-top: none;
-
-}
-
-.autocomplete {
-	color: $font_colour;
-	cursor: pointer;
-	text-align: left;
-	max-height: 350px;
-	overflow: auto;
-	border-bottom-left-radius: $radius;
-	border-bottom-right-radius: $radius;
-}
-
-.autocomplete .selected {
-	background: #eee;
-}
-
-.autocomplete div {
-	padding: 2px 5px;
-	white-space: nowrap;
-	overflow: hidden;
-	text-overflow: ellipsis;
-}
-
 .jslider .jslider-scale ins {
 	color: #333;
 	font-size: 0.9rem;
@@ -749,19 +700,7 @@ div.jGrowl div.jGrowl-notification {
 	text-align: center;
 }
 
-a.rconnect, a.rateme, div.rateme {
-  color: $nav_active_icon_colour;
-  text-decoration: none;
-  font-weight: normal;
-  outline: none;
-}
-
-a.rconnect:hover, a.rateme:hover, div.rateme:hover {
-	color: #0080FF;
-	text-decoration: none;
-}
-
-.widget .conv-participants {
+.conv-participants {
 	color: $font_colour;
 }
 
@@ -830,7 +769,7 @@ a.rconnect:hover, a.rateme:hover, div.rateme:hover {
 .contact-block-content {
 	margin-top: 10px;
 }
-.contact-block-img.archived, .app-deleted {
+.contact-block-img.archived, .app-deleted, .dim {
 	opacity: 0.3;
 	filter:alpha(opacity=30);
 }
@@ -906,21 +845,24 @@ margin-right: 50px;
 	list-style-type: none;
 }
 
-.generic-icons {
+.generic-icons,
+a .generic-icons {
 	font-size: 1rem;
-	color: $toolicon_colour;
 	margin-right: 0.5rem;
+	color: $font_colour;
+}
+
+.generic-icons:hover,
+a .generic-icons:hover {
+	color: $font_colour;
 }
 
 .generic-icons-right {
 	font-size: 1rem;
-	color: $toolicon_colour;
 	margin-left: 0.5rem;
+	color: $font_colour;
 }
 
-.generic-icons:hover {
-	color: $toolicon_colour;
-}
 
 .generic-icons-nav {
 	font-size: 1.2em;
@@ -929,14 +871,13 @@ margin-right: 50px;
 
 .admin-icons {
 	font-size: 1.2em;
-	color: $toolicon_colour;
 	margin-right: 7px;
 }
 
 .drop-icons,
 a .drop-icons {
-	color: $toolicon_colour;
-	font-size: 1.2em;
+	font-size: 1rem;
+	color: $font_colour;
 	text-decoration: none;
 	cursor: pointer;
 }
@@ -981,7 +922,6 @@ th,td {
 /* mail */
 
 img.mail-conv-sender-photo {
-	-moz-border-radius: $radius;
 	border-radius: $radius;
 }
 
@@ -1105,23 +1045,21 @@ img.mail-conv-sender-photo {
 	border-top: 0px solid $comment_item_colour;
 }
 
-.wall-item-photo {
-	border: none;
-	width: $top_photo !important;
-	height: $top_photo !important;
 
+.wall-item-photo {
+	width: $top_photo;
+	height: $top_photo;
+	border: none;
+	border-radius: $radius;
+	box-shadow: $shadowpx $shadowpx $shadowpx 0 #444444;
 }
 
 .comment .wall-item-photo {
-	width: $reply_photo !important;
-	height: $reply_photo !important;
+	width: $reply_photo;
+	height: $reply_photo;
 }
 
-.wall-item-photo {
-    border-radius: $radius;
-    -moz-border-radius: $radius;
-    box-shadow: $shadowpx $shadowpx $shadowpx 0 #444444;
-}
+
 
 .wall-item-ago,
 .dropdown-sub-text {
@@ -1136,14 +1074,6 @@ img.mail-conv-sender-photo {
 	font-size: 1rem;
 }
 
-.item-tool {
-	font-size: 1.2em;
-	color: $toolicon_colour;
-}
-
-.like-rotator {
-	color: $toolicon_colour;
-}
 
 .comment-edit-text-empty,
 .comment-edit-text-full {
@@ -1174,19 +1104,12 @@ img.mail-conv-sender-photo {
 .widget {
 	background-color: rgba(254,254,254,.5);
 	border: 1px solid rgba(254,254,254,.5);
-	-moz-border-radius: $radius;
-	-webkit-border-radius: $radius;
 	border-radius: $radius;
-}
-
-.widget h3 {
-	color: $toolicon_colour;
 }
 
 #note-text {
 	border: 1px solid #ccc;
 	border-radius: $radius;
-	-moz-border-radius: $radius;
 }
 
 .fileas-ul {
@@ -1196,7 +1119,6 @@ img.mail-conv-sender-photo {
 #datebrowse-sidebar select {
 	border: 1px solid #ccc;
 	border-radius: $radius;
-	-moz-border-radius: $radius;
 }
 
 .thing-show img {
@@ -1255,12 +1177,12 @@ img.mail-conv-sender-photo {
 }
 
 .usermenu {
-	width: 3.5rem;
+	width: 3.75rem;
 }
 
 #avatar {
-	width: 2.2rem;
-	height: 2.2rem;
+	width: 2.35rem;
+	height: 2.35rem;
 	border-radius: $radius;
 }
 
@@ -1428,6 +1350,7 @@ blockquote {
 }
 
 .dropdown-menu {
+	color: $font_colour;
 	font-size: 0.9rem;
 	border-radius: $radius;
 }
@@ -1436,61 +1359,36 @@ blockquote {
 	border-radius: $radius;
 }
 
-/*
-.navbar-inverse {
-	background-image: -webkit-linear-gradient(top, $nav_gradient_top 0%, $nav_gradient_bottom 100%);
-	background-image:         linear-gradient(to bottom, $nav_gradient_top 0%, $nav_gradient_bottom 100%);
-	filter: progid:DXImageTransform.Microsoft.gradient(startColorstr=$nav_gradient_top, endColorstr=$nav_gradient_bottom, GradientType=0);
-	background-color: $nav_bg;
-	border-color: $nav_bd;
+.dropdown-item {
+	color: $font_colour;
 }
 
-
-.navbar-inverse .navbar-collapse {
-	border-color: $nav_bd;
+.dropdown-item:active,
+.dropdown-item:focus,
+.dropdown-item:hover,
+.textcomplete-item:focus .dropdown-item,
+.textcomplete-item:hover .dropdown-item,
+.textcomplete-item.active .dropdown-item,
+.textcomplete-item:active .dropdown-item {
+	color: $font_colour;
+	background-color: $item_colour;
 }
 
-.navbar-inverse .navbar-nav > .active > a {
-	background-image: -webkit-linear-gradient(top, $nav_active_gradient_top 0%, $nav_active_gradient_bottom 100%);
-	background-image:         linear-gradient(to bottom, $nav_active_gradient_top 0%, $nav_active_gradient_bottom 100%);
-	filter: progid:DXImageTransform.Microsoft.gradient(startColorstr=$nav_active_gradient_top, endColorstr=$nav_active_gradient_bottom, GradientType=0);
+.bg-inverse {
+	background-color: $nav_bg !important;
 }
 
-
-.navbar-inverse .navbar-nav > li > a {
+.navbar-inverse .navbar-nav .nav-link,
+.usermenu i {
 	color: $nav_icon_colour;
 }
 
-.navbar-inverse .navbar-nav > li > a:hover,
-.navbar-inverse .navbar-nav > li > a:focus {
+.navbar-inverse .navbar-nav .nav-link:focus,
+.navbar-inverse .navbar-nav .nav-link:hover,
+.usermenu:focus i,
+.usermenu:hover i {
 	color: $nav_active_icon_colour;
 }
-
-.navbar-inverse .navbar-nav > .active > a,
-.navbar-inverse .navbar-nav > .active > a:hover,
-.navbar-inverse .navbar-nav > .active > a:focus {
-	color: $nav_active_icon_colour;
-}
-
-.navbar-inverse .navbar-nav > .open > a,
-.navbar-inverse .navbar-nav > .open > a:hover,
-.navbar-inverse .navbar-nav > .open > a:focus {
-	background-color: $nav_bd;
-	color: $nav_active_icon_colour;
-}
-
-.navbar-inverse .navbar-toggle {
-	border-color: $nav_bd;
-}
-.navbar-inverse .navbar-toggle:hover,
-.navbar-inverse .navbar-toggle:focus {
-	background-color: $nav_bg;
-}
-
-.navbar-inverse .navbar-toggle .icon-bar {
-	background-color: $nav_active_icon_colour;
-}
-*/
 
 @media screen and (max-width: 767px) {
 
@@ -1690,13 +1588,9 @@ dl.bb-dl > dd > li {
 	border-left: 0.2rem solid #eee;
 }
 
-.w100 {
-	width: 100%;
-}
-
 .app-icon {
+	color: #777;
 	font-size: 80px;
-	color: $toolicon_colour;
 	text-shadow: 3px 3px 3px lightgrey;
 }
 

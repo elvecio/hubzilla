@@ -236,15 +236,17 @@ class Wiki extends \Zotlabs\Web\Controller {
 
 				$mimeType = $p['mimeType'];
 
-				$rawContent = htmlspecialchars_decode(json_decode($p['content']),ENT_COMPAT);
+				$sampleContent = (($mimeType == 'text/bbcode') ? '[h3]' . t('New page') . '[/h3]' : '### ' . t('New page'));
 
-				$content = ($p['content'] !== '' ? $rawContent : '"# New page\n"');
+				$content = (($p['content'] == '') ? $sampleContent : $p['content']);
+
 				// Render the Markdown-formatted page content in HTML
 				if($mimeType == 'text/bbcode') {
 					$renderedContent = Zlib\NativeWikiPage::convert_links(zidify_links(smilies(bbcode($content))), argv(0) . '/' . argv(1) . '/' . $wikiUrlName);
 				}
 				else {
-					$html = Zlib\NativeWikiPage::generate_toc(zidify_text(purify_html(MarkdownExtra::defaultTransform(Zlib\NativeWikiPage::bbcode($content)))));
+					$content = Zlib\MarkdownSoap::unescape($content);
+					$html = Zlib\NativeWikiPage::generate_toc(zidify_text(MarkdownExtra::defaultTransform(Zlib\NativeWikiPage::bbcode($content))));
 					$renderedContent = Zlib\NativeWikiPage::convert_links($html, argv(0) . '/' . argv(1) . '/' . $wikiUrlName);
 				}
 				$showPageControls = $wiki_editor;
@@ -253,6 +255,7 @@ class Wiki extends \Zotlabs\Web\Controller {
 				goaway('/' . argv(0) . '/' . argv(1) . '/' . $wikiUrlName . '/' . $pageUrlName);
 		}
 		
+
 		$wikiModalID = random_string(3);
 
 		$wikiModal = replace_macros(get_markup_template('generic_modal.tpl'), array(
@@ -328,8 +331,12 @@ class Wiki extends \Zotlabs\Web\Controller {
 				$html = Zlib\NativeWikiPage::convert_links(zidify_links(smilies(bbcode($content))),$wikiURL);
 			}
 			else {
-				$content = Zlib\NativeWikiPage::bbcode($content);
-				$html = Zlib\NativeWikiPage::generate_toc(zidify_text(purify_html(MarkdownExtra::defaultTransform($content))));
+				$bb = Zlib\NativeWikiPage::bbcode($content);
+				$x = new ZLib\MarkdownSoap($bb);
+				$md = $x->clean();
+				$md = ZLib\MarkdownSoap::unescape($md);
+				$html = MarkdownExtra::defaultTransform($md);
+				$html = Zlib\NativeWikiPage::generate_toc(zidify_text($html));
 				$html = Zlib\NativeWikiPage::convert_links($html,$wikiURL);
 			}
 			json_return_and_die(array('html' => $html, 'success' => true));
@@ -356,6 +363,14 @@ class Wiki extends \Zotlabs\Web\Controller {
 			if($wiki['urlName'] === '') {				
 				notice( t('Error creating wiki. Invalid name.') . EOL);
 				goaway('/wiki');
+				return; //not reached
+			}
+
+			$exists = Zlib\NativeWiki::exists_by_name($owner['channel_id'], $wiki['urlName']);
+			if($exists['id']) {
+				notice( t('A wiki with this name already exists.') . EOL);
+				goaway('/wiki');
+				return; //not reached
 			}
 
 			// Get ACL for permissions
@@ -454,7 +469,11 @@ class Wiki extends \Zotlabs\Web\Controller {
 				json_return_and_die(array('pages' => null, 'message' => 'Permission denied.', 'success' => false));					
 			}
 
-			$page_list_html = widget_wiki_pages(array(
+			// @FIXME - we shouldn't invoke this if it isn't in the PDL or has been over-ridden
+
+			$x = new \Zotlabs\Widget\Wiki_pages();
+
+			$page_list_html = $x->widget(array(
 					'resource_id' => $resource_id, 
 					'refresh' => true, 
 					'channel' => argv(1)));
@@ -512,7 +531,6 @@ class Wiki extends \Zotlabs\Web\Controller {
 			$resource_id = $_POST['resource_id'];
 			$pageUrlName = $_POST['name'];
 			
-
 			// Determine if observer has permission to read content
 
 			$perms = Zlib\NativeWiki::get_permissions($resource_id, intval($owner['channel_id']), $observer_hash);
@@ -521,11 +539,12 @@ class Wiki extends \Zotlabs\Web\Controller {
 				json_return_and_die(array('historyHTML' => '', 'message' => 'Permission denied.', 'success' => false));
 			}
 
-			$historyHTML = widget_wiki_page_history(array(
+			$historyHTML = \Zotlabs\Lib\NativeWikiPage::render_page_history(array(
 				'resource_id' => $resource_id,
 				'pageUrlName' => $pageUrlName,
 				'permsWrite'  => $perms['write']
 			));
+
 			json_return_and_die(array('historyHTML' => $historyHTML, 'message' => '', 'success' => true));
 		}
 

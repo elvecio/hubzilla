@@ -4,8 +4,6 @@ namespace Zotlabs\Render;
 
 require_once('include/security.php');
 require_once('include/menu.php');
-require_once('include/widgets.php');
-
 
 
 class Comanche {
@@ -409,6 +407,21 @@ class Comanche {
 				$vars[$mtch[1]] = $mtch[2];
 			}
 		}
+
+		$clsname = ucfirst($name);
+		$nsname = "\\Zotlabs\\Widget\\" . $clsname;
+
+		if(file_exists('Zotlabs/SiteWidget/' . $clsname . '.php'))
+			require_once('Zotlabs/SiteWidget/' . $clsname . '.php');
+		elseif(file_exists('Zotlabs/Widget/' . $clsname . '.php'))
+			require_once('Zotlabs/Widget/' . $clsname . '.php');
+		if(class_exists($nsname)) {
+			$x = new $nsname;
+			$f = 'widget';
+			if(method_exists($x,$f)) {
+				return $x->$f($vars);
+			}
+		} 
 
 		$func = 'widget_' . trim($name);
 

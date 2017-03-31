@@ -84,7 +84,6 @@ class Browser extends DAV\Browser\Plugin {
 		require_once('include/conversation.php');
 		require_once('include/text.php');
 		if ($this->auth->owner_nick) {
-			//$html = profile_tabs(get_app(), (($is_owner) ? true : false), $this->auth->owner_nick);
 			$html = '';
 		}
 
@@ -241,9 +240,11 @@ class Browser extends DAV\Browser\Plugin {
 				'$nick' => $this->auth->getCurrentUser()
 			));
 
-		$a = get_app();
+
+		$a = false;
+
 		\App::$page['content'] = $html;
-		load_pdl($a);
+		load_pdl();
 
 		$current_theme = \Zotlabs\Render\Theme::current();
 
@@ -256,7 +257,7 @@ class Browser extends DAV\Browser\Plugin {
 			}
 		}
 		$this->server->httpResponse->setHeader('Content-Security-Policy', "script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'");
-		construct_page($a);
+		construct_page();
 	}
 
 	/**

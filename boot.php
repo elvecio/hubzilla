@@ -5,14 +5,13 @@
  */
 
 /**
- * Hubzilla.
  *
- * Hubzilla is an open source decentralised communications
+ * This is an open source decentralised communications
  * platform combined with a decentralised identity/authentication framework
  * wrapped in an extensible content management system, providing website designers
  * the ability to embed fully decentralised communications and social tools
  * into many traditional website designs (blogs, forums, small business
- * websites, charitable organisations, etc.). Hubzilla also provides DNS mobility
+ * websites, charitable organisations, etc.). Also provided is DNS mobility
  * and internet scale privacy/access control.
  *
  * This allows any individual website to participate in a matrix of linked
@@ -50,7 +49,7 @@ require_once('include/hubloc.php');
 
 
 define ( 'PLATFORM_NAME',           'hubzilla' );
-define ( 'STD_VERSION',             '2.3.1' );
+define ( 'STD_VERSION',             '2.3.3' );
 define ( 'ZOT_REVISION',            '1.2' );
 
 define ( 'DB_UPDATE_VERSION',       1188  );
@@ -82,7 +81,7 @@ define ( 'DIRECTORY_REALM',            'RED_GLOBAL');
 define ( 'DIRECTORY_FALLBACK_MASTER',  'https://gravizot.de');
 
 $DIRECTORY_FALLBACK_SERVERS = array( 
-	'https://hubzilla.site',
+	//'https://hubzilla.site',
 	'https://hubzilla.zottel.net',
 	'https://my.federated.social',
 	'https://hubzilla.nl',
@@ -126,7 +125,9 @@ define ( 'LANGUAGE_DETECT_MIN_CONFIDENCE', 0.01 );
  * either more or less restrictive.
  */
 
-define ( 'STORAGE_DEFAULT_PERMISSIONS',   0770 );
+if(! defined('STORAGE_DEFAULT_PERMISSIONS')) {
+	define ( 'STORAGE_DEFAULT_PERMISSIONS',   0770 );
+}
 
 
 /**
@@ -147,12 +148,6 @@ define ( 'STORAGE_DEFAULT_PERMISSIONS',   0770 );
  */
 define ( 'MAX_IMAGE_LENGTH',        -1  );
 
-
-/**
- * Not yet used
- */
-
-define ( 'DEFAULT_DB_ENGINE',  'MyISAM'  );
 
 /**
  * log levels
@@ -190,15 +185,6 @@ define ( 'ACCESS_PRIVATE',         0 );
 define ( 'ACCESS_PAID',            1 );
 define ( 'ACCESS_FREE',            2 );
 define ( 'ACCESS_TIERED',          3 );
-
-/**
- * relationship types
- */
-
-define ( 'CONTACT_IS_FOLLOWER', 1);
-define ( 'CONTACT_IS_SHARING',  2);
-define ( 'CONTACT_IS_FRIEND',   3);
-
 
 /**
  * DB update return values
@@ -527,14 +513,6 @@ define ( 'ACTIVITY_OBJ_LOCATION',NAMESPACE_ZOT  . '/activity/location' );
 define ( 'ACTIVITY_OBJ_FILE',    NAMESPACE_ZOT  . '/activity/file' );
 
 /**
- * item weight for query ordering
- */
-
-define ( 'GRAVITY_PARENT',       0);
-define ( 'GRAVITY_LIKE',         3);
-define ( 'GRAVITY_COMMENT',      6);
-
-/**
  * Account Flags
  */
 
@@ -549,7 +527,6 @@ define ( 'ACCOUNT_PENDING',      0x0010 );
  * Account roles
  */
 
-define ( 'ACCOUNT_ROLE_ALLOWCODE', 0x0001 );
 define ( 'ACCOUNT_ROLE_SYSTEM',    0x0002 );
 define ( 'ACCOUNT_ROLE_DEVELOPER', 0x0004 );
 define ( 'ACCOUNT_ROLE_ADMIN',     0x1000 );
@@ -559,16 +536,16 @@ define ( 'ACCOUNT_ROLE_ADMIN',     0x1000 );
  */
 
 define ( 'ITEM_VISIBLE',         0x0000);
-//define ( 'ITEM_HIDDEN',          0x0001);
+define ( 'ITEM_HIDDEN',          0x0001);
 define ( 'ITEM_BLOCKED',         0x0002);
 define ( 'ITEM_MODERATED',       0x0004);
 define ( 'ITEM_SPAM',            0x0008);
-//define ( 'ITEM_DELETED',         0x0010);
+define ( 'ITEM_DELETED',         0x0010);
 define ( 'ITEM_UNPUBLISHED',     0x0020);
-//define ( 'ITEM_WEBPAGE',         0x0040);	// is a static web page, not a conversational item
+define ( 'ITEM_WEBPAGE',         0x0040);	// is a static web page, not a conversational item
 define ( 'ITEM_DELAYED_PUBLISH', 0x0080);
 define ( 'ITEM_BUILDBLOCK',      0x0100);	// Named thusly to make sure nobody confuses this with ITEM_BLOCKED
-//define ( 'ITEM_PDL',			 0x0200);	// Page Description Language - e.g. Comanche
+define ( 'ITEM_PDL',			 0x0200);	// Page Description Language - e.g. Comanche
 define ( 'ITEM_BUG',			 0x0400);	// Is a bug, can be used by the internal bug tracker
 define ( 'ITEM_PENDING_REMOVE',  0x0800);   // deleted, notification period has lapsed
 define ( 'ITEM_DOC',             0x1000);   // hubzilla only, define here so that item import does the right thing
@@ -727,6 +704,7 @@ function startup() {
  * which is now static (although currently constructed at startup). We are only converting
  * 'system' config settings.
  */
+
 class miniApp {
 	public $config = array('system' => array());
 
@@ -1282,18 +1260,6 @@ class App {
 
 
 /**
- * @brief Retrieve the App structure.
- *
- * Useful in functions which require it but don't get it passed to them
- *
- * @return App
- */
-function get_app() {
-	return $a;
-}
-
-
-/**
  * @brief Multi-purpose function to check variable state.
  *
  * Usage: x($var) or $x($array, 'key')
@@ -1416,11 +1382,7 @@ function is_ajax() {
 // base url for use in cmdline programs which don't have
 // $_SERVER variables, and synchronising the state of installed plugins.
 
-function check_config(&$a) {
-
-	$build = get_config('system','db_version');
-	if(! intval($build))
-		$build = set_config('system','db_version',DB_UPDATE_VERSION);
+function check_config() {
 
 	$saved = get_config('system','urlverify');
 	if(! $saved)
@@ -1458,88 +1420,8 @@ function check_config(&$a) {
 	if (! $syschan_exists)
 		create_sys_channel();
 
-	if($build != DB_UPDATE_VERSION) {
-		$stored = intval($build);
-		if(! $stored) {
-			logger('Critical: check_config unable to determine database schema version');
-			return;
-		}
-		$current = intval(DB_UPDATE_VERSION);
-		if(($stored < $current) && file_exists('install/update.php')) {
+	$x = new \Zotlabs\Lib\DB_Upgrade(DB_UPDATE_VERSION);
 
-			load_config('database');
-
-			// We're reporting a different version than what is currently installed.
-			// Run any existing update scripts to bring the database up to current.
-			require_once('install/update.php');
-
-			// make sure that boot.php and update.php are the same release, we might be
-			// updating right this very second and the correct version of the update.php
-			// file may not be here yet. This can happen on a very busy site.
-
-			if(DB_UPDATE_VERSION == UPDATE_VERSION) {
-				for($x = $stored; $x < $current; $x ++) {
-					if(function_exists('update_r' . $x)) {
-						// There could be a lot of processes running or about to run.
-						// We want exactly one process to run the update command.
-						// So store the fact that we're taking responsibility
-						// after first checking to see if somebody else already has.
-
-						// If the update fails or times-out completely you may need to
-						// delete the config entry to try again.
-
-						if(get_config('database','update_r' . $x))
-							break;
-						set_config('database','update_r' . $x, '1');
-						// call the specific update
-
-						$func = 'update_r' . $x;
-						$retval = $func();
-						if($retval) {
-
-							// Prevent sending hundreds of thousands of emails by creating
-							// a lockfile.  
-
-							$lockfile = 'store/[data]/mailsent';
-
-							if ((file_exists($lockfile)) && (filemtime($lockfile) > (time() - 86400)))
-									return;
-							@unlink($lockfile);
-							//send the administrator an e-mail
-							file_put_contents($lockfile, $x);
-							
-							$r = q("select account_language from account where account_email = '%s' limit 1",
-								dbesc(App::$config['system']['admin_email'])
-							);
-							push_lang(($r) ? $r[0]['account_language'] : 'en');
-
-
-							$email_tpl = get_intltext_template("update_fail_eml.tpl");
-							$email_msg = replace_macros($email_tpl, array(
-								'$sitename' => App::$config['system']['sitename'],
-								'$siteurl' =>  z_root(),
-								'$update' => $x,
-								'$error' => sprintf( t('Update %s failed. See error logs.'), $x)
-							));
-
-							$subject = email_header_encode(sprintf(t('Update Error at %s'), z_root()));
-
-							mail(App::$config['system']['admin_email'], $subject, $email_msg,
-								'From: Administrator' . '@' . $_SERVER['SERVER_NAME'] . "\n"
-								. 'Content-type: text/plain; charset=UTF-8' . "\n"
-								. 'Content-transfer-encoding: 8bit' );
-							//try the logger
-							logger('CRITICAL: Update Failed: ' . $x);
-							pop_lang();
-						}
-						else
-							set_config('database','update_r' . $x, 'success');
-					}
-				}
-				set_config('system','db_version', DB_UPDATE_VERSION);
-			}
-		}
-	}
 
 	/**
 	 *
@@ -1824,18 +1706,6 @@ function local_channel() {
 }
 
 /**
- * local_user() got deprecated and replaced by local_channel().
- *
- * @deprecated since v2.1, use local_channel()
- * @see local_channel()
- */
-function local_user() {
-	logger('local_user() is DEPRECATED, use local_channel()');
-	return local_channel();
-}
-
-
-/**
  * @brief Returns a xchan_hash (visitor_id) of remote authenticated visitor
  * or false.
  *
@@ -1855,18 +1725,6 @@ function remote_channel() {
 
 	return false;
 }
-
-/**
- * remote_user() got deprecated and replaced by remote_channel().
- *
- * @deprecated since v2.1, use remote_channel()
- * @see remote_channel()
- */
-function remote_user() {
-	logger('remote_user() is DEPRECATED, use remote_channel()');
-	return remote_channel();
-}
-
 
 /**
  * Contents of $s are displayed prominently on the page the next time
@@ -2160,7 +2018,7 @@ function curPageURL() {
  *
  * @return mixed
  */
-function get_custom_nav(&$a, $navname) {
+function get_custom_nav($navname) {
 	if (! $navname)
 		return App::$page['nav'];
 	// load custom nav menu by name here
@@ -2172,9 +2030,8 @@ function get_custom_nav(&$a, $navname) {
  * If there is no parsed Comanche template already load a module's pdl file
  * and parse it with Comanche.
  *
- * @param App &$a global application object
  */
-function load_pdl(&$a) {
+function load_pdl() {
 
 	App::$comanche = new Zotlabs\Render\Comanche();
 
@@ -2201,7 +2058,7 @@ function load_pdl(&$a) {
 }
 
 
-function exec_pdl(&$a) {
+function exec_pdl() {
 	if(App::$pdl) {
 		App::$comanche->parse(App::$pdl,1);
 	}
@@ -2213,11 +2070,10 @@ function exec_pdl(&$a) {
  *
  * Build the page - now that we have all the components
  *
- * @param App &$a global application object
  */
-function construct_page(&$a) {
+function construct_page() {
 
-	exec_pdl($a);
+	exec_pdl();
 
 	$comanche = ((count(App::$layout)) ? true : false);
 
@@ -2233,7 +2089,7 @@ function construct_page(&$a) {
 
 	if ($comanche) {
 		if (App::$layout['nav']) {
-			App::$page['nav'] = get_custom_nav($a, App::$layout['nav']);
+			App::$page['nav'] = get_custom_nav(App::$layout['nav']);
 		}
 	}
 
@@ -2357,7 +2213,7 @@ function construct_page(&$a) {
 }
 
 /**
- * @brief Returns Hubzilla's root directory.
+ * @brief Returns appplication root directory.
  *
  * @return string
  */
@@ -2373,7 +2229,7 @@ function appdirpath() {
 function head_set_icon($icon) {
 
 	App::$data['pageicon'] = $icon;
-//	logger('head_set_icon: ' . $icon);
+
 }
 
 /**
@@ -2449,10 +2305,10 @@ function z_get_temp_dir() {
 function z_check_cert() {
 
 	if(strpos(z_root(),'https://') !== false) {
-		$x = z_fetch_url(z_root() . '/siteinfo/json');
+		$x = z_fetch_url(z_root() . '/siteinfo.json');
 		if(! $x['success']) {
 			$recurse = 0;
-			$y = z_fetch_url(z_root() . '/siteinfo/json',false,$recurse,array('novalidate' => true));
+			$y = z_fetch_url(z_root() . '/siteinfo.json',false,$recurse,array('novalidate' => true));
 			if($y['success'])
 				cert_bad_email();
 		}
@@ -2463,23 +2319,23 @@ function z_check_cert() {
 /**
  * @brief Send email to admin if server has an invalid certificate.
  *
- * If a Hubzilla hub is available over https it must have a publicly valid
- * certificate.
+ * If a hub is available over https it must have a publicly valid certificate.
  */
+
 function cert_bad_email() {
-
-	$email_tpl = get_intltext_template("cert_bad_eml.tpl");
-	$email_msg = replace_macros($email_tpl, array(
-		'$sitename' => App::$config['system']['sitename'],
-		'$siteurl' =>  z_root(),
-		'$error' => t('Website SSL certificate is not valid. Please correct.')
-	));
-
-	$subject = email_header_encode(sprintf(t('[hubzilla] Website SSL error for %s'), App::get_hostname()));
-	mail(App::$config['system']['admin_email'], $subject, $email_msg,
-		'From: Administrator' . '@' . App::get_hostname() . "\n"
-		. 'Content-type: text/plain; charset=UTF-8' . "\n"
-		. 'Content-transfer-encoding: 8bit' );
+	return z_mail(
+		[
+			'toEmail'        => \App::$config['system']['admin_email'],
+			'messageSubject' => sprintf(t('[$Projectname] Website SSL error for %s'), App::get_hostname()),
+			'textVersion'    => replace_macros(get_intltext_template('cert_bad_eml.tpl'),
+				[
+					'$sitename' => App::$config['system']['sitename'],
+					'$siteurl'  =>  z_root(),
+					'$error'    => t('Website SSL certificate is not valid. Please correct.')
+				]
+			)
+		]
+	);
 }
 
 
@@ -2590,20 +2446,20 @@ function check_cron_broken() {
 		return;
 	}
 
-	$email_tpl = get_intltext_template("cron_bad_eml.tpl");
-	$email_msg = replace_macros($email_tpl, array(
-		'$sitename' => App::$config['system']['sitename'],
-		'$siteurl' =>  z_root(),
-		'$error' => t('Cron/Scheduled tasks not running.'),
-		'$lastdate' => (($d)? $d : t('never'))
-	));
-
-	$subject = email_header_encode(sprintf(t('[hubzilla] Cron tasks not running on %s'), App::get_hostname()));
-	mail(App::$config['system']['admin_email'], $subject, $email_msg,
-		'From: Administrator' . '@' . App::get_hostname() . "\n"
-		. 'Content-type: text/plain; charset=UTF-8' . "\n"
-		. 'Content-transfer-encoding: 8bit' );
-	return;
+	return z_mail(
+		[
+			'toEmail'        => \App::$config['system']['admin_email'],
+			'messageSubject' => sprintf(t('[$Projectname] Cron tasks not running on %s'), App::get_hostname()),
+			'textVersion'    => replace_macros(get_intltext_template('cron_bad_eml.tpl'),
+				[
+					'$sitename' => App::$config['system']['sitename'],
+					'$siteurl'  =>  z_root(),
+					'$error'    => t('Cron/Scheduled tasks not running.'),
+					'$lastdate' => (($d)? $d : t('never'))
+				]
+			)
+		]
+	);
 }
 
 

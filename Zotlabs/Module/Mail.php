@@ -296,7 +296,9 @@ class Mail extends \Zotlabs\Web\Controller {
 	
 			return $o;
 		}
-	
+
+		$direct_mid = 0;
+
 		switch(argv(1)) {
 			case 'combined':
 				$mailbox = 'combined';
@@ -309,12 +311,22 @@ class Mail extends \Zotlabs\Web\Controller {
 				break;
 			default:
 				$mailbox = 'combined';
+
+				// notifications direct to mail/nn
+
+				if(intval(argv(1)))
+					$direct_mid = intval(argv(1));
 				break;
 		}
 	
+
 		$last_message = private_messages_list(local_channel(), $mailbox, 0, 1);
-	
+
 		$mid = ((argc() > 2) && (intval(argv(2)))) ? argv(2) : $last_message[0]['id'];
+
+		if($direct_mid)
+			$mid = $direct_mid;
+	
 	
 		$plaintext = true;
 	

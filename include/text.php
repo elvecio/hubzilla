@@ -3,6 +3,7 @@
  * @file include/text.php
  */
 
+use \Zotlabs\Lib as Zlib;
 use \Michelf\MarkdownExtra;
 
 require_once("include/bbcode.php");
@@ -89,11 +90,9 @@ function escape_tags($string) {
 }
 
 
-function z_input_filter($channel_id,$s,$type = 'text/bbcode') {
+function z_input_filter($s,$type = 'text/bbcode',$allow_code = false) {
 
 	if($type === 'text/bbcode')
-		return escape_tags($s);
-	if($type === 'text/markdown')
 		return escape_tags($s);
 	if($type == 'text/plain')
 		return escape_tags($s);
@@ -104,15 +103,15 @@ function z_input_filter($channel_id,$s,$type = 'text/bbcode') {
 		return $s;
 	}
 
-	$r = q("select account_id, account_roles, channel_pageflags from account left join channel on channel_account_id = account_id where channel_id = %d limit 1",
-		intval($channel_id)
-	);
-	if($r) {
-		if(($r[0]['account_roles'] & ACCOUNT_ROLE_ALLOWCODE) || ($r[0]['channel_pageflags'] & PAGE_ALLOWCODE)) {
-			if(local_channel() && (get_account_id() == $r[0]['account_id'])) {
-				return $s;
-			}
-		}
+	if($allow_code) {
+		if($type === 'text/markdown')
+			return htmlspecialchars($s,ENT_QUOTES);
+		return $s;
+	}
+
+	if($type === 'text/markdown') {
+		$x = new Zlib\MarkdownSoap($s);
+		return $x->clean();
 	}
 
 	if($type === 'text/html')
@@ -122,13 +121,23 @@ function z_input_filter($channel_id,$s,$type = 'text/bbcode') {
 }
 
 
-
+/**
+ * @brief Use HTMLPurifier to get standards compliant HTML.
+ *
+ * Use the <a href="http://htmlpurifier.org/" target="_blank">HTMLPurifier</a>
+ * library to get filtered and standards compliant HTML.
+ *
+ * @see HTMLPurifier
+ *
+ * @param string $s raw HTML
+ * @param boolean $allow_position allow CSS position
+ * @return string standards compliant filtered HTML
+ */
 function purify_html($s, $allow_position = false) {
-	require_once('library/HTMLPurifier.auto.php');
-	require_once('include/html2bbcode.php');
 
 /**
  * @FIXME this function has html output, not bbcode - so safely purify these
+ * require_once('include/html2bbcode.php');
  * $s = html2bb_video($s);
  * $s = oembed_html2bbcode($s);
  */
@@ -136,6 +145,15 @@ function purify_html($s, $allow_position = false) {
 	$config = HTMLPurifier_Config::createDefault();
 	$config->set('Cache.DefinitionImpl', null);
 	$config->set('Attr.EnableID', true);
+
+	// If enabled, target=blank attributes are added to all links.
+	//$config->set('HTML.TargetBlank', true);
+	//$config->set('Attr.AllowedFrameTargets', ['_blank', '_self', '_parent', '_top']);
+	// restore old behavior of HTMLPurifier < 4.8, only used when targets allowed at all
+	// do not add rel="noreferrer" to all links with target attributes
+	//$config->set('HTML.TargetNoreferrer', false);
+	// do not add noopener rel attributes to links which have a target attribute associated with them
+	//$config->set('HTML.TargetNoopener', false);
 
 	//Allow some custom data- attributes used by built-in libs.
 	//In this way members which do not have allowcode set can still use the built-in js libs in webpages to some extent.
@@ -274,7 +292,6 @@ function purify_html($s, $allow_position = false) {
 			new HTMLPurifier_AttrDef_CSS_Length(),
 			new HTMLPurifier_AttrDef_CSS_Percentage()
 		));
-
 	}
 
 	$purifier = new HTMLPurifier($config);
@@ -1639,6 +1656,7 @@ function prepare_text($text, $content_type = 'text/bbcode', $cache = false) {
 			break;
 
 		case 'text/markdown':
+			$text = Zlib\MarkdownSoap::unescape($text);
 			$s = MarkdownExtra::defaultTransform($text);
 			break;
 
@@ -1794,22 +1812,8 @@ function mimetype_select($channel_id, $current = 'text/bbcode') {
 	);
 
 
-	if(App::$is_sys) {
+	if((App::$is_sys) || (channel_codeallowed($channel_id) && $channel_id == local_channel())){
 		$x[] = 'application/x-php';
-	}
-	else {
-		$r = q("select account_id, account_roles, channel_pageflags from account left join channel on account_id = channel_account_id where
-			channel_id = %d limit 1",
-			intval($channel_id)
-		);
-
-		if($r) {
-			if(($r[0]['account_roles'] & ACCOUNT_ROLE_ALLOWCODE) || ($r[0]['channel_pageflags'] & PAGE_ALLOWCODE)) {
-				if(local_channel() && get_account_id() == $r[0]['account_id']) {
-					$x[] = 'application/x-php';
-				}
-			}
-		}
 	}
 
 	foreach($x as $y) {
@@ -3046,7 +3050,15 @@ function array2XML($obj, $array) {
 	}
 }
 
-
+/**
+ * @brief Inserts an array into $table.
+ *
+ * @TODO Why is this function in include/text.php?
+ *
+ * @param string $table
+ * @param array $arr
+ * @return boolean|PDOStatement
+ */
 function create_table_from_array($table, $arr) {
 
 	if(! ($arr && $table))
@@ -3126,3 +3138,14 @@ function array_escape_tags(&$v,$k) {
 	$v = escape_tags($v);
 }
 
+function ellipsify($s,$maxlen) {
+	if($maxlen & 1)
+		$maxlen --;
+	if($maxlen < 4)
+		$maxlen = 4;
+
+	if(mb_strlen($s) < $maxlen)
+		return $s;
+
+	return mb_substr($s,0,$maxlen / 2) . '...' . mb_substr($s,mb_strlen($s) - ($maxlen / 2));
+} 
