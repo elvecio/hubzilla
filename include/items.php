@@ -632,14 +632,17 @@ function get_item_elements($x,$allow_code = false) {
 		return array();
 
 	// save a potentially expensive lookup if author == owner
+
 	if($arr['author_xchan'] === make_xchan_hash($x['owner']['guid'],$x['owner']['guid_sig']))
 		$arr['owner_xchan'] = $arr['author_xchan'];
 	else {
 		$xchan_hash = import_author_xchan($x['owner']);
-		if($xchan_hash)
+		if($xchan_hash) {
 			$arr['owner_xchan'] = $xchan_hash;
-		else
+		}
+		else {
 			return array();
+		}
 	}
 
 	// Check signature on the body text received. 
@@ -656,10 +659,25 @@ function get_item_elements($x,$allow_code = false) {
 		$r = q("select xchan_pubkey from xchan where xchan_hash = '%s' limit 1",
 			dbesc($arr['author_xchan'])
 		);
-		if($r && rsa_verify($x['body'],base64url_decode($arr['sig']),$r[0]['xchan_pubkey']))
-			$arr['item_verified'] = 1;
-		else
-			logger('get_item_elements: message verification failed.');
+		if($r) {
+			if($r[0]['xchan_pubkey']) {
+				if(rsa_verify($x['body'],base64url_decode($arr['sig']),$r[0]['xchan_pubkey'])) {
+					$arr['item_verified'] = 1;
+				}
+				else {
+					logger('get_item_elements: message verification failed.');
+				}
+			}
+			else {
+
+				// If we don't have a public key, strip the signature so it won't show as invalid.
+				// This won't happen in normal use, but could happen if import_author_xchan()
+				// failed to load the zot-info packet due to a server failure and had 
+				// to create an alternate xchan with network 'unknown'
+
+				unset($arr['sig']);
+			}
+		}
 	}
 
 	// if the input is markdown, remove one level of html escaping.
@@ -769,6 +787,8 @@ function import_author_xchan($x) {
 	if($arr['xchan_hash'])
 		return $arr['xchan_hash'];
 
+	$y = false;
+
 	if((! array_key_exists('network', $x)) || ($x['network'] === 'zot')) {
 		$y = import_author_zot($x);
 	}
@@ -779,11 +799,11 @@ function import_author_xchan($x) {
 		$y = import_author_rss($x);
 	}
 
-	if($x['network'] === 'unknown') {
+	if(! $y) {
 		$y = import_author_unknown($x);
 	}
 
-	return(($y) ? $y : false);
+	return($y);
 }
 
 /**
@@ -1121,7 +1141,7 @@ function encode_item_xchan($xchan) {
 	$ret['address']  = $xchan['xchan_addr'];
 	$ret['url']      = $xchan['xchan_url'];
 	$ret['network']  = $xchan['xchan_network'];
-	$ret['photo']    = array('mimetype' => $xchan['xchan_photo_mimetype'], 'src' => $xchan['xchan_photo_m']);
+	$ret['photo']    = [ 'mimetype' => $xchan['xchan_photo_mimetype'], 'src' => $xchan['xchan_photo_m'] ];
 	$ret['guid']     = $xchan['xchan_guid'];
 	$ret['guid_sig'] = $xchan['xchan_guid_sig'];
 
@@ -1824,9 +1844,12 @@ logger('revision: ' . $arr['revision']);
 		intval($arr['revision'])
 	);
 
-	if($r && count($r)) {
+	if($r) {
+		// This will gives us a fresh copy of what's now in the DB and undo the db escaping, 
+		// which really messes up the notifications
+
 		$current_post = $r[0]['id'];
-		$arr = $r[0];  // This will gives us a fresh copy of what's now in the DB and undo the db escaping, which really messes up the notifications
+		$arr = $r[0];
 		logger('item_store: created item ' . $current_post, LOGGER_DEBUG);
 	}
 	else {

@@ -12,7 +12,6 @@ html {
 }
 
 body {
-	font-family: sans-serif, arial, freesans;
 	font-size: 0.9rem;
 	background-color: $bgcolour;
 	background-image: url('$background_image');
@@ -117,7 +116,7 @@ a:focus,
 }
 
 input, optgroup, select, textarea {
-	color: $font_colour;
+	font-size: 0.9rem !important;
 	resize: vertical;
 }
 
@@ -865,7 +864,7 @@ a .generic-icons:hover {
 
 
 .generic-icons-nav {
-	font-size: 1.2em;
+	font-size: 1rem;
 	margin-right: 7px;
 }
 
@@ -1058,8 +1057,6 @@ img.mail-conv-sender-photo {
 	width: $reply_photo;
 	height: $reply_photo;
 }
-
-
 
 .wall-item-ago,
 .dropdown-sub-text {
@@ -1480,17 +1477,17 @@ dl.bb-dl > dd > li {
 
 
 /* Turn checkboxes into switches */
-.field.checkbox > div {
+.form-group.checkbox > div {
     position: relative; width: 60px;
     -webkit-user-select:none; -moz-user-select:none; -ms-user-select: none;
     display:inline-block;
 }
 
-.field.checkbox input {
+.form-group.checkbox input {
     display: none;
 }
 
-.field.checkbox > div label {
+.form-group.checkbox > div label {
     display: block; overflow: hidden; cursor: pointer;
     border: 1px solid #ccc;
     border-radius: 4px;
@@ -1500,11 +1497,11 @@ dl.bb-dl > dd > li {
 	transition: border-color ease-in-out .15s, box-shadow ease-in-out .15s;
 }
 
-.field.checkbox:hover label {
+.form-group.checkbox:hover label {
 	color: $link_colour;
 }
 
-.field.checkbox:hover > div label {
+.form-group.checkbox:hover > div label {
 	border-color: $link_colour;
 }
 
@@ -1543,11 +1540,11 @@ dl.bb-dl > dd > li {
     -o-transition: all 0.3s ease-in 0s; transition: all 0.3s ease-in 0s;
 }
 
-.field.checkbox > div > input:checked + label .onoffswitch-inner {
+.form-group.checkbox > div > input:checked + label .onoffswitch-inner {
     margin-left: 0px;
 }
 
-.field.checkbox > div > input:checked + label .onoffswitch-switch {
+.form-group.checkbox > div > input:checked + label .onoffswitch-switch {
     right: 0px;
     background-color: #0275d8;
 }

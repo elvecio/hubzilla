@@ -49,10 +49,10 @@ require_once('include/hubloc.php');
 
 
 define ( 'PLATFORM_NAME',           'hubzilla' );
-define ( 'STD_VERSION',             '2.3.3' );
+define ( 'STD_VERSION',             '2.3.4' );
 define ( 'ZOT_REVISION',            '1.2' );
 
-define ( 'DB_UPDATE_VERSION',       1188  );
+define ( 'DB_UPDATE_VERSION',       1189  );
 
 define ( 'PROJECT_BASE',   __DIR__ );
 
@@ -486,6 +486,7 @@ define ( 'ACTIVITY_JOIN',        NAMESPACE_ACTIVITY_SCHEMA . 'join' );
 define ( 'ACTIVITY_POST',        NAMESPACE_ACTIVITY_SCHEMA . 'post' );
 define ( 'ACTIVITY_UPDATE',      NAMESPACE_ACTIVITY_SCHEMA . 'update' );
 define ( 'ACTIVITY_TAG',         NAMESPACE_ACTIVITY_SCHEMA . 'tag' );
+define ( 'ACTIVITY_SHARE',       NAMESPACE_ACTIVITY_SCHEMA . 'share' );
 define ( 'ACTIVITY_FAVORITE',    NAMESPACE_ACTIVITY_SCHEMA . 'favorite' );
 define ( 'ACTIVITY_CREATE',      NAMESPACE_ACTIVITY_SCHEMA . 'create' );
 define ( 'ACTIVITY_WIN',         NAMESPACE_ACTIVITY_SCHEMA . 'win' );
@@ -619,9 +620,6 @@ function sys_boot() {
 		define( 'DEFAULT_NOTIFY_ICON', '/images/hz-white-32.png' );
 	}
 
-	if(! defined('CRYPTO_ALGORITHM')) {
-		define( 'CRYPTO_ALGORITHM', 'aes256cbc' );
-	}
 
 	/*
 	 * Try to open the database;
