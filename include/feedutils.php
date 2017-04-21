@@ -63,7 +63,7 @@ function get_public_feed($channel, $params) {
  */
 function get_feed_for($channel, $observer_hash, $params) {
 
-	if(! channel)
+	if(! $channel)
 		http_status_exit(401);
 
 	if($params['pages']) {
@@ -946,7 +946,7 @@ function consume_feed($xml, $importer, &$contact, $pass = 0) {
 				$datarray['author_xchan'] = '';
 
 				if(activity_match($datarray['verb'],ACTIVITY_FOLLOW) && $datarray['obj_type'] === ACTIVITY_OBJ_PERSON) {
-					$cb = array('item' => $datarray,'channel' => $importer, 'xchan' => null, 'author' => $author, 'caught' => false);
+					$cb = array('item' => $datarray,'channel' => $importer, 'xchan' => [ 'placeholder' => '' ], 'author' => $author, 'caught' => false);
 					call_hooks('follow_from_feed',$cb);
 					if($cb['caught']) {
 						if($cb['return_code'])
