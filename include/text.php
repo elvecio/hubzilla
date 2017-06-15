@@ -1552,17 +1552,22 @@ function prepare_body(&$item,$attach = false) {
 
 		// if original photo width is <= 640px prepend it to item body
 		if($object['link'][0]['width'] && $object['link'][0]['width'] <= 640) {
-			$s .= '<div class="inline-photo-item-wrapper"><a href="' . zid(rawurldecode($object['id'])) . '" target="_blank"><img class="inline-photo-item" style="max-width:' . $object['link'][0]['width'] . 'px; width:100%; height:auto;" src="' . zid(rawurldecode($object['link'][0]['href'])) . '"></a></div>' . $s;
+			$s .= '<div class="inline-photo-item-wrapper"><a href="' . zid(rawurldecode($object['id'])) . '" target="_blank" rel="nofollow noopener" ><img class="inline-photo-item" style="max-width:' . $object['link'][0]['width'] . 'px; width:100%; height:auto;" src="' . zid(rawurldecode($object['link'][0]['href'])) . '"></a></div>' . $s;
 		}
 
 		// if original photo width is > 640px make it a cover photo
 		if($object['link'][0]['width'] && $object['link'][0]['width'] > 640) {
 			$scale = ((($object['link'][1]['width'] == 1024) || ($object['link'][1]['height'] == 1024)) ? 1 : 0);
-			$photo = '<a href="' . zid(rawurldecode($object['id'])) . '" target="_blank"><img style="max-width:' . $object['link'][$scale]['width'] . 'px; width:100%; height:auto;" src="' . zid(rawurldecode($object['link'][$scale]['href'])) . '"></a>';
+			$photo = '<a href="' . zid(rawurldecode($object['id'])) . '" target="_blank" rel="nofollow noopener"><img style="max-width:' . $object['link'][$scale]['width'] . 'px; width:100%; height:auto;" src="' . zid(rawurldecode($object['link'][$scale]['href'])) . '"></a>';
 		}
 	}
 
-	$s .= prepare_text($item['body'],$item['mimetype'], false);
+	if($item['item_obscured']) {
+		$s .= prepare_binary($item);
+	}
+	else {
+		$s .= prepare_text($item['body'],$item['mimetype'], false);
+	}
 
 	$event = (($item['obj_type'] === ACTIVITY_OBJ_EVENT) ? format_event_obj($item['obj']) : false);
 
@@ -1624,6 +1629,17 @@ function prepare_body(&$item,$attach = false) {
 
 	return $prep_arr;
 }
+
+
+function prepare_binary($item) {
+	return replace_macros(get_markup_template('item_binary.tpl'), [
+		'$download'  => t('Download binary/encrypted content'),
+		'$url'       => z_root() . '/viewsrc/' . $item['id'] . '/download'
+	]);
+}
+
+
+
 
 /**
  * @brief Given a text string, convert from bbcode to html and add smilie icons.
@@ -2897,7 +2913,7 @@ function pdl_selector($uid, $current='') {
 
 	$sql_extra = item_permissions_sql($uid);
 
-	$r = q("select iconfig.*, mid from item_id left join item on iconfig.iid = item.id
+	$r = q("select iconfig.*, mid from iconfig left join item on iconfig.iid = item.id
 		where item.uid = %d and iconfig.cat = 'system' and iconfig.k = 'PDL' $sql_extra order by v asc",
 		intval($uid)
 	);
@@ -2969,40 +2985,13 @@ function text_highlight($s, $lang) {
 			$s = jindent($s);
 	}
 
-	if(! strpos('Text_Highlighter', get_include_path())) {
-		set_include_path(get_include_path() . PATH_SEPARATOR . 'library/Text_Highlighter');
-	}
-	require_once('library/Text_Highlighter/Text/Highlighter.php');
-	require_once('library/Text_Highlighter/Text/Highlighter/Renderer/Html.php');
-	$options = array(
-		'numbers' => HL_NUMBERS_LI,
-		'tabsize' => 4,
-	);
-	$tag_added = false;
-	$s = trim(html_entity_decode($s, ENT_COMPAT));
-	$s = str_replace("    ", "\t", $s);
+	$arr = [ 'text' => $s, 'language' => $lang, 'success' => false ];
+	call_hooks('text_highlight',$arr);
 
-	// The highlighter library insists on an opening php tag for php code blocks. If
-	// it isn't present, nothing is highlighted. So we're going to see if it's present.
-	// If not, we'll add it, and then quietly remove it after we get the processed output back.
-
-	if($lang === 'php') {
-		if(strpos('<?php', $s) !== 0) {
-			$s = '<?php' . "\n" . $s;
-			$tag_added = true;
-		}
-	}
-	$renderer = new Text_Highlighter_Renderer_HTML($options);
-	$hl = Text_Highlighter::factory($lang);
-	$hl->setRenderer($renderer);
-	$o = $hl->highlight($s);
-	$o = str_replace(["    ", "\n"], ["&nbsp;&nbsp;&nbsp;&nbsp;", ''], $o);
-
-	if($tag_added) {
-		$b = substr($o, 0, strpos($o, '<li>'));
-		$e = substr($o, strpos($o, '</li>'));
-		$o = $b . $e;
-	}
+	if($arr['success'])
+		$o = $arr['text'];
+	else
+		$o = $s;
 
 	return('<code>' . $o . '</code>');
 }
@@ -3065,6 +3054,14 @@ function create_table_from_array($table, $arr) {
 	return $r;
 }
 
+function share_shield($m) {
+	return str_replace($m[1],'!=+=+=!' . base64url_encode($m[1]) . '=+!=+!=',$m[0]);
+}
+
+function share_unshield($m) {
+	$x = str_replace(array('!=+=+=!','=+!=+!='),array('',''),$m[1]);
+	return str_replace($m[1], base64url_decode($x), $m[0]);
+}
 
 
 function cleanup_bbcode($body) {

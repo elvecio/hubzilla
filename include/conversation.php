@@ -353,14 +353,6 @@ function localize_item(&$item){
 	}
 */
 
-	// if item body was obscured and we changed it, re-obscure it
-	// FIXME - we need a better filter than just the string 'data'; try and
-	// match the fact that it's json encoded
-
-	if(intval($item['item_obscured'])
-		&& strlen($item['body']) && (! strpos($item['body'],'data'))) {
-		$item['body']  = z_obscure($item['body']);
-	}
 
 }
 
@@ -917,9 +909,9 @@ function thread_action_menu($item,$mode = '') {
 
 }
 
-function author_is_pmable($xchan) {
+function author_is_pmable($xchan, $abook) {
 
-	$x = [ 'xchan' => $xchan, 'result' => 'unset' ];
+	$x = [ 'xchan' => $xchan, 'abook' => $abook, 'result' => 'unset' ];
 	call_hooks('author_is_pmable',$x);
 	if($x['result'] !== 'unset')
 		return $x['result'];
@@ -949,7 +941,7 @@ function thread_author_menu($item, $mode = '') {
 	}
 
 	$profile_link = chanlink_hash($item['author_xchan']);
-
+	$contact = false;
 
 	if(App::$contacts && array_key_exists($item['author_xchan'],App::$contacts))
 		$contact = App::$contacts[$item['author_xchan']];
@@ -958,9 +950,9 @@ function thread_author_menu($item, $mode = '') {
 			$follow_url = z_root() . '/follow/?f=&url=' . urlencode($item['author']['xchan_addr']);
 
 	
-	if($item['uid'] > 0 && author_is_pmable($item['author']))
+	if($item['uid'] > 0 && author_is_pmable($item['author'],$contact)) {
 		$pm_url = z_root() . '/mail/new/?f=&hash=' . urlencode($item['author_xchan']);
-
+	}
 
 
 	if($contact) {
