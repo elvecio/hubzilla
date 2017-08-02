@@ -199,6 +199,10 @@ class Channel {
 			$vnotify += intval($_POST['vnotify10']);
 		if(x($_POST,'vnotify11'))
 			$vnotify += intval($_POST['vnotify11']);
+		if(x($_POST,'vnotify12'))
+			$vnotify += intval($_POST['vnotify12']);
+		if(x($_POST,'vnotify13') && ! get_config('system', 'disable_discover_tab'))
+			$vnotify += intval($_POST['vnotify13']);
 	
 		$always_show_in_notices = x($_POST,'always_show_in_notices') ? 1 : 0;
 		
@@ -489,7 +493,6 @@ class Channel {
 	
 			'$h_prv' 	=> t('Security and Privacy Settings'),
 			'$permissions_set' => $permissions_set,
-			'$server_role' => \Zotlabs\Lib\System::get_server_role(),
 			'$perms_set_msg' => t('Your permissions are already configured. Click to view/adjust'),
 	
 			'$hide_presence' => array('hide_presence', t('Hide my online presence'),$hide_presence, t('Prevents displaying in your profile that you are online'), $yes_no),
@@ -556,6 +559,8 @@ class Channel {
 			'$vnotify9'  => array('vnotify9', t('System critical alerts'), ($vnotify & VNOTIFY_ALERT), VNOTIFY_ALERT, t('Recommended'), $yes_no),
 			'$vnotify10'  => array('vnotify10', t('New connections'), ($vnotify & VNOTIFY_INTRO), VNOTIFY_INTRO, t('Recommended'), $yes_no),
 			'$vnotify11'  => array('vnotify11', t('System Registrations'), ($vnotify & VNOTIFY_REGISTER), VNOTIFY_REGISTER, '', $yes_no),
+			'$vnotify12'  => array('vnotify12', t('Unseen shared files'), ($vnotify & VNOTIFY_FILES), VNOTIFY_FILES, '', $yes_no),
+			'$vnotify13'  => ((! get_config('system', 'disable_discover_tab')) ? array('vnotify13', t('Unseen public activity'), ($vnotify & VNOTIFY_PUBS), VNOTIFY_PUBS, '', $yes_no) : array()),
 			'$always_show_in_notices'  => array('always_show_in_notices', t('Also show new wall posts, private messages and connections under Notices'), $always_show_in_notices, 1, '', $yes_no),
 	
 			'$evdays' => array('evdays', t('Notify me of events this many days in advance'), $evdays, t('Must be greater than 0')),			

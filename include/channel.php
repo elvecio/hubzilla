@@ -258,6 +258,7 @@ function create_identity($arr) {
 			'channel_system'      => intval($system),
 			'channel_expire_days' => intval($expire),
 			'channel_timezone'    => App::$timezone
+
 		]
 	);
 
@@ -452,6 +453,108 @@ function create_identity($arr) {
 	$ret['success'] = true;
 	return $ret;
 }
+
+
+function change_channel_keys($channel) {
+
+	$ret = array('success' => false);
+
+	$stored = [];
+
+	$key = new_keypair(4096);
+
+	$sig = base64url_encode(rsa_sign($channel['channel_guid'],$key['prvkey']));
+	$hash = make_xchan_hash($channel['channel_guid'],$sig);
+
+	$stored['old_guid']     = $channel['channel_guid'];
+	$stored['old_guid_sig'] = $channel['channel_guid_sig'];
+	$stored['old_key']      = $channel['channel_pubkey'];
+	$stored['old_hash']     = $channel['channel_hash'];
+
+	$stored['new_key']      = $key['pubkey'];
+	$stored['new_sig']      = base64url_encode(rsa_sign($key['pubkey'],$channel['channel_prvkey']));
+
+	// Save this info for the notifier to collect
+
+	set_pconfig($channel['channel_id'],'system','keychange',$stored);
+
+	$r = q("update channel set channel_prvkey = '%s', channel_pubkey = '%s', channel_guid_sig = '%s', channel_hash = '%s' where channel_id = %d",
+		dbesc($key['prvkey']),
+		dbesc($key['pubkey']),
+		dbesc($sig),
+		dbesc($hash),
+		intval($channel['channel_id'])
+	);
+	if(! $r) {
+		return $ret;
+ 	}
+
+	$r = q("select * from channel where channel_id = %d",
+		intval($channel['channel_id'])
+	);
+
+	if(! $r) {
+		$ret['message'] = t('Unable to retrieve modified identity');
+		return $ret;
+	}
+
+	$modified = $r[0];
+
+	$h = q("select * from hubloc where hubloc_hash = '%s' and hubloc_url = '%s' ",
+		dbesc($stored['old_hash']),
+		dbesc(z_root())
+	);
+
+	if($h) {
+		foreach($h as $hv) {
+			$hv['hubloc_guid_sig'] = $sig;
+			$hv['hubloc_hash']     = $hash;
+			$hv['hubloc_url_sig']  = base64url_encode(rsa_sign(z_root(),$modifed['channel_prvkey']));
+			hubloc_store_lowlevel($hv);
+		}
+	}
+
+	$x = q("select * from xchan where xchan_hash = '%s' ",
+		dbesc($stored['old_hash'])
+	);
+
+	$check = q("select * from xchan where xchan_hash = '%s'",
+		dbesc($hash)
+	);
+
+	if(($x) && (! $check)) {
+		$oldxchan = $x[0];
+		foreach($x as $xv) {
+			$xv['xchan_guid_sig']  = $sig;
+			$xv['xchan_hash']      = $hash;
+			$xv['xchan_pubkey']    = $key['pubkey'];
+			xchan_store_lowlevel($xv);
+			$newxchan = $xv;
+		}
+	}
+
+	build_sync_packet($channel['channel_id'], [ 'keychange' => $stored ]);
+
+	$a = q("select * from abook where abook_xchan = '%s' and abook_self = 1",
+		dbesc($stored['old_hash'])
+	);
+
+	if($a) {
+		q("update abook set abook_xchan = '%s' where abook_id = %d",
+			dbesc($hash),
+			intval($a[0]['abook_id'])
+		);
+	}
+
+	xchan_change_key($oldxchan,$newxchan,$stored);
+
+	Zotlabs\Daemon\Master::Summon(array('Notifier', 'keychange', $channel['channel_id']));
+
+	$ret['success'] = true;
+	return $ret;
+}
+
+
 
 /**
  * @brief Set default channel to be used on login.
@@ -1161,30 +1264,15 @@ function profile_sidebar($profile, $block = 0, $show_connect = true, $zcard = fa
 		$location = $reddress = $pdesc = $gender = $marital = $homepage = False;
 	}
 
+	if($profile['gender']) {
+		$profile['gender_icon'] = gender_icon($profile['gender']);
+	}
+
 	$firstname = ((strpos($profile['channel_name'],' '))
 		? trim(substr($profile['channel_name'],0,strpos($profile['channel_name'],' '))) : $profile['channel_name']);
 	$lastname = (($firstname === $profile['channel_name']) ? '' : trim(substr($profile['channel_name'],strlen($firstname))));
 
 	// @fixme move this to the diaspora plugin itself
-
-	if(plugin_is_installed('diaspora')) {
-		$diaspora = array(
-			'podloc'     => z_root(),
-			'guid'       => $profile['channel_guid'] . str_replace('.','',App::get_hostname()),
-			'pubkey'     => pemtorsa($profile['channel_pubkey']),
-			'searchable' => (($block) ? 'false' : 'true'),
-			'nickname'   => $profile['channel_address'],
-			'fullname'   => $profile['channel_name'],
-			'firstname'  => $firstname,
-			'lastname'   => $lastname,
-			'photo300'   => z_root() . '/photo/profile/300/' . $profile['uid'] . '.jpg',
-			'photo100'   => z_root() . '/photo/profile/100/' . $profile['uid'] . '.jpg',
-			'photo50'    => z_root() . '/photo/profile/50/'  . $profile['uid'] . '.jpg',
-		);
-	}
-	else
-		$diaspora = '';
-
 
 	$contact_block = contact_block();
 
@@ -1218,7 +1306,6 @@ function profile_sidebar($profile, $block = 0, $show_connect = true, $zcard = fa
 		'$marital'       => $marital,
 		'$homepage'      => $homepage,
 		'$chanmenu'      => $channel_menu,
-		'$diaspora'      => $diaspora,
 		'$reddress'      => $reddress,
 		'$rating'        => '',
 		'$contact_block' => $contact_block,
@@ -1229,7 +1316,29 @@ function profile_sidebar($profile, $block = 0, $show_connect = true, $zcard = fa
 
 	call_hooks('profile_sidebar', $arr);
 
-	return $o;
+	return $arr['entry'];
+
+}
+
+function gender_icon($gender) {
+
+//	logger('gender: ' . $gender);
+
+	// This can easily get throw off if the observer language is different 
+	// than the channel owner language.
+
+	if(strpos(strtolower($gender),strtolower(t('Female'))) !== false)
+		return 'venus';
+	if(strpos(strtolower($gender),strtolower(t('Male'))) !== false)
+		return 'mars';
+	if(strpos(strtolower($gender),strtolower(t('Trans'))) !== false)
+		return 'transgender';
+	if(strpos(strtolower($gender),strtolower(t('Neuter'))) !== false)
+		return 'neuter';
+	if(strpos(strtolower($gender),strtolower(t('Non-specific'))) !== false)
+		return 'genderless';
+
+	return '';
 }
 
 
@@ -1998,48 +2107,47 @@ function remote_login() {
 
 }
 
-
 function channel_store_lowlevel($arr) {
+    $store = [
+        'channel_account_id'      => ((array_key_exists('channel_account_id',$arr))      ? $arr['channel_account_id']      : '0'),
+        'channel_primary'         => ((array_key_exists('channel_primary',$arr))         ? $arr['channel_primary']         : '0'),
+        'channel_name'            => ((array_key_exists('channel_name',$arr))            ? $arr['channel_name']            : ''),
+        'channel_address'         => ((array_key_exists('channel_address',$arr))         ? $arr['channel_address']         : ''),
+        'channel_guid'            => ((array_key_exists('channel_guid',$arr))            ? $arr['channel_guid']            : ''),
+        'channel_guid_sig'        => ((array_key_exists('channel_guid_sig',$arr))        ? $arr['channel_guid_sig']        : ''),
+        'channel_hash'            => ((array_key_exists('channel_hash',$arr))            ? $arr['channel_hash']            : ''),
+        'channel_timezone'        => ((array_key_exists('channel_timezone',$arr))        ? $arr['channel_timezone']        : 'UTC'),
+        'channel_location'        => ((array_key_exists('channel_location',$arr))        ? $arr['channel_location']        : ''),
+        'channel_theme'           => ((array_key_exists('channel_theme',$arr))           ? $arr['channel_theme']           : ''),
+        'channel_startpage'       => ((array_key_exists('channel_startpage',$arr))       ? $arr['channel_startpage']       : ''),
+        'channel_pubkey'          => ((array_key_exists('channel_pubkey',$arr))          ? $arr['channel_pubkey']          : ''),
+        'channel_prvkey'          => ((array_key_exists('channel_prvkey',$arr))          ? $arr['channel_prvkey']          : ''),
+        'channel_notifyflags'     => ((array_key_exists('channel_notifyflags',$arr))     ? $arr['channel_notifyflags']     : '65535'),
+        'channel_pageflags'       => ((array_key_exists('channel_pageflags',$arr))       ? $arr['channel_pageflags']       : '0'),
+        'channel_dirdate'         => ((array_key_exists('channel_dirdate',$arr))         ? $arr['channel_dirdate']         : NULL_DATE),
+        'channel_lastpost'        => ((array_key_exists('channel_lastpost',$arr))        ? $arr['channel_lastpost']        : NULL_DATE),
+        'channel_deleted'         => ((array_key_exists('channel_deleted',$arr))         ? $arr['channel_deleted']         : NULL_DATE),
+        'channel_max_anon_mail'   => ((array_key_exists('channel_max_anon_mail',$arr))   ? $arr['channel_max_anon_mail']   : '10'),
+        'channel_max_friend_req'  => ((array_key_exists('channel_max_friend_req',$arr))  ? $arr['channel_max_friend_req']  : '10'),
+        'channel_expire_days'     => ((array_key_exists('channel_expire_days',$arr))     ? $arr['channel_expire_days']     : '0'),
+        'channel_passwd_reset'    => ((array_key_exists('channel_passwd_reset',$arr))    ? $arr['channel_passwd_reset']    : ''),
+        'channel_default_group'   => ((array_key_exists('channel_default_group',$arr))   ? $arr['channel_default_group']   : ''),
+        'channel_allow_cid'       => ((array_key_exists('channel_allow_cid',$arr))       ? $arr['channel_allow_cid']       : ''),
+        'channel_allow_gid'       => ((array_key_exists('channel_allow_gid',$arr))       ? $arr['channel_allow_gid']       : ''),
+        'channel_deny_cid'        => ((array_key_exists('channel_deny_cid',$arr))        ? $arr['channel_deny_cid']        : ''),
+        'channel_deny_gid'        => ((array_key_exists('channel_deny_gid',$arr))        ? $arr['channel_deny_gid']        : ''),
+        'channel_removed'         => ((array_key_exists('channel_removed',$arr))         ? $arr['channel_removed']         : '0'),
+        'channel_system'          => ((array_key_exists('channel_system',$arr))          ? $arr['channel_system']          : '0'),
 
-	$store = [
-		'channel_account_id'      => ((array_key_exists('channel_account_id',$arr))      ? $arr['channel_account_id']      : '0'),
-		'channel_primary'         => ((array_key_exists('channel_primary',$arr))         ? $arr['channel_primary']         : '0'),
-		'channel_name'            => ((array_key_exists('channel_name',$arr))            ? $arr['channel_name']            : ''),
-		'channel_address'         => ((array_key_exists('channel_address',$arr))         ? $arr['channel_address']         : ''),
-		'channel_guid'            => ((array_key_exists('channel_guid',$arr))            ? $arr['channel_guid']            : ''),
-		'channel_guid_sig'        => ((array_key_exists('channel_guid_sig',$arr))        ? $arr['channel_guid_sig']        : ''),
-		'channel_hash'            => ((array_key_exists('channel_hash',$arr))            ? $arr['channel_hash']            : ''),
-		'channel_timezone'        => ((array_key_exists('channel_timezone',$arr))        ? $arr['channel_timezone']        : 'UTC'),
-		'channel_location'        => ((array_key_exists('channel_location',$arr))        ? $arr['channel_location']        : ''),
-		'channel_theme'           => ((array_key_exists('channel_theme',$arr))           ? $arr['channel_theme']           : ''),
-		'channel_startpage'       => ((array_key_exists('channel_startpage',$arr))       ? $arr['channel_startpage']       : ''),
-		'channel_pubkey'          => ((array_key_exists('channel_pubkey',$arr))          ? $arr['channel_pubkey']          : ''),
-		'channel_prvkey'          => ((array_key_exists('channel_prvkey',$arr))          ? $arr['channel_prvkey']          : ''),
-		'channel_notifyflags'     => ((array_key_exists('channel_notifyflags',$arr))     ? $arr['channel_notifyflags']     : '65535'),
-		'channel_pageflags'       => ((array_key_exists('channel_pageflags',$arr))       ? $arr['channel_pageflags']       : '0'),
-		'channel_dirdate'         => ((array_key_exists('channel_dirdate',$arr))         ? $arr['channel_dirdate']         : NULL_DATE),
-		'channel_lastpost'        => ((array_key_exists('channel_lastpost',$arr))        ? $arr['channel_lastpost']        : NULL_DATE),
-		'channel_deleted'         => ((array_key_exists('channel_deleted',$arr))         ? $arr['channel_deleted']         : NULL_DATE),
-		'channel_max_anon_mail'   => ((array_key_exists('channel_max_anon_mail',$arr))   ? $arr['channel_max_anon_mail']   : '10'),
-		'channel_max_friend_req'  => ((array_key_exists('channel_max_friend_req',$arr))  ? $arr['channel_max_friend_req']  : '10'),
-		'channel_expire_days'     => ((array_key_exists('channel_expire_days',$arr))     ? $arr['channel_expire_days']     : '0'),
-		'channel_passwd_reset'    => ((array_key_exists('channel_passwd_reset',$arr))    ? $arr['channel_passwd_reset']    : ''),
-		'channel_default_group'   => ((array_key_exists('channel_default_group',$arr))   ? $arr['channel_default_group']   : ''),
-		'channel_allow_cid'       => ((array_key_exists('channel_allow_cid',$arr))       ? $arr['channel_allow_cid']       : ''),
-		'channel_allow_gid'       => ((array_key_exists('channel_allow_gid',$arr))       ? $arr['channel_allow_gid']       : ''),
-		'channel_deny_cid'        => ((array_key_exists('channel_deny_cid',$arr))        ? $arr['channel_deny_cid']        : ''),
-		'channel_deny_gid'        => ((array_key_exists('channel_deny_gid',$arr))        ? $arr['channel_deny_gid']        : ''),
-		'channel_removed'         => ((array_key_exists('channel_removed',$arr))         ? $arr['channel_removed']         : '0'),
-		'channel_system'          => ((array_key_exists('channel_system',$arr))          ? $arr['channel_system']          : '0'),
 		'channel_moved'           => ((array_key_exists('channel_moved',$arr))           ? $arr['channel_moved']           : ''),
 		'channel_password'        => ((array_key_exists('channel_password',$arr))        ? $arr['channel_password']        : ''),
 		'channel_salt'            => ((array_key_exists('channel_salt',$arr))            ? $arr['channel_salt']            : '')
+
 	];
 
 	return create_table_from_array('channel',$store);
 
 }
-
 
 function profile_store_lowlevel($arr) {
 
@@ -2322,6 +2430,7 @@ function channel_codeallowed($channel_id) {
 		return true;
 
 	return false;
+
 }
 
 function anon_identity_init($reqvars) {
@@ -2391,5 +2500,6 @@ function anon_identity_init($reqvars) {
 	}
 
 	return $x[0];
-
 }
+
+

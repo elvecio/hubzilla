@@ -627,16 +627,18 @@ function import_items($channel, $items, $sync = false, $relocate = null) {
 				$item_result = item_store($item,$allow_code,$deliver);
 			}
 
+			// preserve conversations you've been involved in from being expired
+
+			$stored = $item_result['item'];
+			if((is_array($stored)) && ($stored['id'] != $stored['parent']) 
+				&& ($stored['author_xchan'] === $channel['channel_hash'])) {
+				retain_item($stored['item']['parent']);
+			}
+
 			fix_attached_photo_permissions($channel['channel_id'],$item['author_xchan'],$item['body'],$item['allow_cid'],$item['allow_gid'],$item['deny_cid'],$item['deny_gid']);
 
 			fix_attached_file_permissions($channel,$item['author_xchan'],$item['body'],$item['allow_cid'],$item['allow_gid'],$item['deny_cid'],$item['deny_gid']);
 
-			if($sync && $item['item_wall']) {
-				// deliver singletons if we have any
-				if($item_result && $item_result['success']) {
-					Zotlabs\Daemon\Master::Summon( [ 'Notifier','single_activity',$item_result['item_id'] ]);
-				}
-			}
 		}
 	}
 }
@@ -1010,9 +1012,6 @@ function import_mail($channel, $mails, $sync = false) {
 			$m['aid'] = $channel['channel_account_id'];
 			$m['uid'] = $channel['channel_id'];
 			$mail_id = mail_store($m);
-			if($sync && $mail_id) {
-				Zotlabs\Daemon\Master::Summon(array('Notifier','single_mail',$mail_id));
-			}
  		}
 	}
 }

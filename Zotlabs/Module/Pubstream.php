@@ -7,10 +7,10 @@ require_once('include/conversation.php');
 class Pubstream extends \Zotlabs\Web\Controller {
 
 	function get($update = 0, $load = false) {
-	
+
 		if($load)
 			$_SESSION['loadtime'] = datetime_convert();
-	
+
 	
 		if(observer_prohibited(true)) {
 				return login();
@@ -27,7 +27,9 @@ class Pubstream extends \Zotlabs\Web\Controller {
 	
 		if(! $update) {
 
-			$static  = ((local_channel()) ? channel_manual_conv_update(local_channel()) : 0);
+			$_SESSION['static_loadtime'] = datetime_convert();
+
+			$static  = ((local_channel()) ? channel_manual_conv_update(local_channel()) : 1);
 	
 			$maxheight = get_config('system','home_divmore_height');
 			if(! $maxheight)
@@ -167,7 +169,7 @@ class Pubstream extends \Zotlabs\Web\Controller {
 		// fake it
 		$mode = ('network');
 	
-		$o .= conversation($a,$items,$mode,$update,$page_mode);
+		$o .= conversation($items,$mode,$update,$page_mode);
 	
 		if(($items) && (! $update))
 			$o .= alt_pager($a,count($items));

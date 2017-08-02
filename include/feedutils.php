@@ -246,9 +246,17 @@ function get_atom_elements($feed, $item, &$author) {
 
 	$found_author = $item->get_author();
 	if($found_author) {
+		if($rawauthor) {
+			if($rawauthor[0]['child'][NAMESPACE_POCO]['displayName'][0]['data'])
+				$author['full_name'] = unxmlify($rawauthor[0]['child'][NAMESPACE_POCO]['displayName'][0]['data']);
+		}
 		$author['author_name'] = unxmlify($found_author->get_name());
 		$author['author_link'] = unxmlify($found_author->get_link());
 		$author['author_is_feed'] = false;
+
+		$rawauthor = $feed->get_feed_tags(SIMPLEPIE_NAMESPACE_ATOM_10, 'author');
+		logger('rawauthor: ' . print_r($rawauthor, true));
+
 	}
 	else {
 		$author['author_name'] = unxmlify($feed->get_title());
@@ -303,12 +311,6 @@ function get_atom_elements($feed, $item, &$author) {
 
 	if($rawverb) {
 		$res['verb'] = unxmlify($rawverb[0]['data']);
-	}
-
-	// translate OStatus unfollow to activity streams if it happened to get selected
-
-	if((x($res,'verb')) && ($res['verb'] === 'http://ostatus.org/schema/1.0/unfollow')) {
-		$res['verb'] = ACTIVITY_UNFOLLOW;
 	}
 
 
@@ -391,19 +393,45 @@ function get_atom_elements($feed, $item, &$author) {
 
 	$rawcnv = $item->get_item_tags(NAMESPACE_OSTATUS, 'conversation');
 	if($rawcnv) {
+		// new style
 		$ostatus_conversation = normalise_id(unxmlify($rawcnv[0]['attribs']['']['ref']));
-		set_iconfig($res,'ostatus','conversation',$ostatus_conversation,true);
+		if(! $ostatus_conversation) {
+			// old style 
+			$ostatus_conversation = normalise_id(unxmlify($rawcnv[0]['data']));
+		}
+		if($ostatus_conversation) {
+			set_iconfig($res,'ostatus','conversation',$ostatus_conversation,true);
+			logger('ostatus_conversation: ' . $ostatus_conversation, LOGGER_DATA, LOG_INFO);
+		}
 	}
 
 	$ostatus_protocol = (($ostatus_conversation) ? true : false);
 	
 	$mastodon = (($item->get_item_tags('http://mastodon.social/schema/1.0','scope')) ? true : false);
-	if($mastodon)
+	if($mastodon) {
 		$ostatus_protocol = true;
+		if(($mastodon[0]['data']) && ($mastodon[0]['data'] !== 'public'))
+			$res['item_private'] = 1;
+	}
 
 	$apps = $item->get_item_tags(NAMESPACE_STATUSNET, 'notice_info');
 	if($apps && $apps[0]['attribs']['']['source']) {
 		$res['app'] = strip_tags(unxmlify($apps[0]['attribs']['']['source']));
+	}
+
+	if($ostatus_protocol) {
+
+		// translate OStatus unfollow to activity streams if it happened to get selected
+
+		if((x($res,'verb')) && ($res['verb'] === 'http://ostatus.org/schema/1.0/unfollow')) {
+			$res['verb'] = ACTIVITY_UNFOLLOW;
+		}
+
+		// And OStatus 'favorite' is pretty much what we call 'like' on other networks
+
+		if((x($res,'verb')) && ($res['verb'] === ACTIVITY_FAVORITE)) {
+			$res['verb'] = ACTIVITY_LIKE;
+		}
 	}
 
 	/*
@@ -491,7 +519,7 @@ function get_atom_elements($feed, $item, &$author) {
 
 	// turn Mastodon content warning into a #nsfw hashtag
 	if($mastodon && $summary) {
-		$res['body'] .= "\n\n#nsfw\n";
+		$res['body'] .= "\n\n#ContentWarning\n";
 	}
 
 
@@ -603,10 +631,17 @@ function get_atom_elements($feed, $item, &$author) {
 			if(! $type)
 				$type = 'application/octet-stream';
 
-			if(($ostatus_protocol) && (strpos($type,'image') === 0) && (strpos($res['body'],$link) === false) && (strpos($link,'http') === 0)) {
-				$res['body'] .= "\n\n" . '[img]' . $link . '[/img]';
+			if($ostatus_protocol)  {
+				if((strpos($type,'image') === 0) && (strpos($res['body'], ']' . $link . '[/img]') === false) && (strpos($link,'http') === 0)) {
+					$res['body'] .= "\n\n" . '[img]' . $link . '[/img]';
+				}
+				if((strpos($type,'video') === 0) && (strpos($res['body'], ']' . $link . '[/video]') === false) && (strpos($link,'http') === 0)) {
+					$res['body'] .= "\n\n" . '[video]' . $link . '[/video]';
+				}
+				if((strpos($type,'audio') === 0) && (strpos($res['body'], ']' . $link . '[/audio]') === false) && (strpos($link,'http') === 0)) {
+					$res['body'] .= "\n\n" . '[audio]' . $link . '[/audio]';
+				}
 			}
-
 			$res['attach'][] = array('href' => $link, 'length' => $len, 'type' => $type, 'title' => $title );
 		}
 	}
@@ -691,7 +726,7 @@ function get_atom_elements($feed, $item, &$author) {
 	
 
 	if(array_key_exists('verb',$res) && $res['verb'] === ACTIVITY_SHARE
-		&& array_key_exists('obj_type',$res) && $res['obj_type'] === ACTIVITY_OBJ_NOTE) {
+		&& array_key_exists('obj_type',$res) && in_array($res['obj_type'], [ ACTIVITY_OBJ_NOTE, ACTIVITY_OBJ_COMMENT, ACTIVITY_OBJ_ACTIVITY ] )) {
 		feed_get_reshare($res,$item);
 	}
 
@@ -798,8 +833,14 @@ function feed_get_reshare(&$res,$item) {
 				if(! $type)
 					$type = 'application/octet-stream';
 
-				if((strpos($type,'image') === 0) && (strpos($body,$link) === false) && (strpos($link,'http') === 0)) {
+				if((strpos($type,'image') === 0) && (strpos($body, ']' . $link . '[/img]') === false) && (strpos($link,'http') === 0)) {
 					$body .= "\n\n" . '[img]' . $link . '[/img]';
+				}
+				if((strpos($type,'video') === 0) && (strpos($body, ']' . $link . '[/video]') === false) && (strpos($link,'http') === 0)) {
+					$body .= "\n\n" . '[video]' . $link . '[/video]';
+				}
+				if((strpos($type,'audio') === 0) && (strpos($body, ']' . $link . '[/audio]') === false) && (strpos($link,'http') === 0)) {
+					$body .= "\n\n" . '[audio]' . $link . '[/audio]';
 				}
 			}
 		}
@@ -958,6 +999,8 @@ function consume_feed($xml, $importer, &$contact, $pass = 0) {
 		foreach($items as $item) {
 
 			$is_reply = false;
+			$send_downstream = false;
+			$parent_link = '';
 
 			logger('processing ' . $item->get_id(), LOGGER_DEBUG);
 
@@ -966,6 +1009,11 @@ function consume_feed($xml, $importer, &$contact, $pass = 0) {
 				$is_reply = true;
 				$parent_mid = normalise_id($rawthread[0]['attribs']['']['ref']);
 			}
+			if(isset($rawthread[0]['attribs']['']['href'])) {
+				$parent_link = $rawthread[0]['attribs']['']['href'];
+			}
+
+			logger('in-reply-to: ' . $parent_mid, LOGGER_DEBUG);
 
 			if($is_reply) {
 
@@ -980,10 +1028,28 @@ function consume_feed($xml, $importer, &$contact, $pass = 0) {
 				if(! $datarray['mid'])
 					continue;
 
+				// This probably isn't an appropriate default but we're about to change it
+				// if it's wrong.
+
+				$datarray['comment_policy'] = 'authenticated';
+
+				// A Mastodon privacy tag has been found. We cannot send private comments
+				// through the OStatus protocol, so block commenting.
+
+				if(array_key_exists('item_private',$datarray) && intval($datarray['item_private'])) {
+					$datarray['public_policy'] = 'specific';
+					$datarray['comment_policy'] = 'none';
+				}
+
 				if($contact['xchan_network'] === 'rss') {
 					$datarray['public_policy'] = 'specific';
 					$datarray['comment_policy'] = 'none';
 				}
+
+				// if we have everything but a photo, provide the default profile photo
+
+				if($author['author_name'] && $author['author_link'] && (! $author['author_photo']))
+					$author['author_photo'] = z_root() . '/' . get_default_profile_photo(80);
 
 				if((! x($author,'author_name')) || ($author['author_is_feed']))
 					$author['author_name'] = $contact['xchan_name'];
@@ -995,7 +1061,16 @@ function consume_feed($xml, $importer, &$contact, $pass = 0) {
 				$datarray['author_xchan'] = '';
 
 				if($author['author_link'] != $contact['xchan_url']) {
-					$x = import_author_unknown(array('name' => $author['author_name'],'url' => $author['author_link'],'photo' => array('src' => $author['author_photo'])));
+					$name = '';
+					if($author['full_name']) {
+						$name = $author['full_name'];
+						if($author['author_name'])
+							$name .= ' (' . $author['author_name'] . ')';
+					}
+					else {
+						$name = $author['author_name'];
+					}
+					$x = import_author_unknown(array('name' => $name,'url' => $author['author_link'],'photo' => array('src' => $author['author_photo'])));
 					if($x)
 						$datarray['author_xchan'] = $x;
 				}
@@ -1004,7 +1079,7 @@ function consume_feed($xml, $importer, &$contact, $pass = 0) {
 
 				$datarray['owner_xchan'] = $contact['xchan_hash'];
 
-				$r = q("SELECT edited FROM item WHERE mid = '%s' AND uid = %d LIMIT 1",
+				$r = q("SELECT id, edited FROM item WHERE mid = '%s' AND uid = %d LIMIT 1",
 					dbesc($datarray['mid']),
 					intval($importer['channel_id'])
 				);
@@ -1020,7 +1095,12 @@ function consume_feed($xml, $importer, &$contact, $pass = 0) {
 						if(datetime_convert('UTC','UTC',$datarray['edited']) < $r[0]['edited'])
 							continue;
 
+						$datarray['uid'] = $importer['channel_id'];
+						$datarray['aid'] = $importer['channel_account_id'];
+						$datarray['id'] = $r[0]['id'];
+
 						update_feed_item($importer['channel_id'],$datarray);
+
 					}
 					continue;
 				}
@@ -1032,12 +1112,14 @@ function consume_feed($xml, $importer, &$contact, $pass = 0) {
 				// next try thr:in_reply_to
 
 				if($conv_id) {
+					logger('find_parent: conversation_id: ' . $conv_id, LOGGER_DEBUG);
 					$c = q("select parent_mid from item left join iconfig on item.id = iconfig.iid where iconfig.cat = 'ostatus' and iconfig.k = 'conversation' and iconfig.v = '%s' and item.uid = %d order by item.id limit 1",
 						dbesc($conv_id),
 						intval($importer['channel_id'])
 					);
 					if($c) {
-						$pmid = $x[0]['parent_mid'];
+						logger('find_parent: matched conversation: ' . $conv_id, LOGGER_DEBUG);
+						$pmid = $c[0]['parent_mid'];
 						$datarray['parent_mid'] = $pmid;
 					}
 				}
@@ -1048,12 +1130,103 @@ function consume_feed($xml, $importer, &$contact, $pass = 0) {
 					);
 				
 					if($x) {
+						logger('find_parent: matched in-reply-to: ' . $parent_mid, LOGGER_DEBUG);
 						$pmid = $x[0]['parent_mid'];
 						$datarray['parent_mid'] = $pmid;
 					}
 				}
+				if((! $pmid) && $parent_link !== '') {
+					$f = feed_conversation_fetch($importer,$contact,$parent_link);
+					if($f) {
+						// check both potential conversation parents again
+						if($conv_id) {
+							$c = q("select parent_mid from item left join iconfig on item.id = iconfig.iid where iconfig.cat = 'ostatus' and iconfig.k = 'conversation' and iconfig.v = '%s' and item.uid = %d order by item.id limit 1",
+								dbesc($conv_id),
+								intval($importer['channel_id'])
+							);
+							if($c) {
+								$pmid = $c[0]['parent_mid'];
+								$datarray['parent_mid'] = $pmid;
+							}
+						}
+						if(! $pmid) {
+							$x = q("select parent_mid from item where mid = '%s' and uid = %d limit 1",
+								dbesc($parent_mid),
+								intval($importer['channel_id'])
+							);
+				
+							if($x) {
+								$pmid = $x[0]['parent_mid'];
+								$datarray['parent_mid'] = $pmid;
+							}
+						}
+					}
 
-				if(! $pmid) {
+					// the conversation parent might just be the post we are trying to import.
+					// check existence again in case it was just delivered.
+
+					$r = q("SELECT id FROM item WHERE mid = '%s' AND uid = %d LIMIT 1",
+						dbesc($datarray['mid']),
+						intval($importer['channel_id'])
+					);
+					if($r) {
+						continue;
+					}
+				}
+
+				if($pmid) {
+
+					// check comment permissions on the parent
+
+					$parent_item = 0;
+
+					$r = q("select * from item where parent_mid = '%s' and parent_mid = mid and uid = %d limit 1",
+						dbesc($pmid),
+						intval($importer['channel_id'])
+					);
+					if($r) {
+						$parent_item = $r[0];
+						if(intval($parent_item['item_nocomment']) || $parent_item['comment_policy'] === 'none' 
+							|| ($parent_item['comments_closed'] > NULL_DATE && $parent_item['comments_closed'] < datetime_convert())) {
+							logger('comments disabled for post ' . $parent_item['mid']);
+							continue;
+						}
+					}
+
+					$allowed = false;
+
+					if($parent_item) {
+						if($parent_item['owner_xchan'] == $importer['channel_hash']) 
+							$allowed = perm_is_allowed($importer['channel_id'],$contact['xchan_hash'],'post_comments');
+						else
+							$allowed = true;
+
+						if(! $allowed) {
+							logger('Ignoring this comment author.');
+							$status = 202;
+							continue;
+						}
+
+						// The salmon endpoint sets this to indicate that we should send comments from
+						// interactive feeds (such as OStatus) downstream to our followers
+						// We do not want to set it for non-interactive feeds or conversations we do not own
+
+						if(array_key_exists('send_downstream',$importer) && intval($importer['send_downstream']) 
+							&& ($parent_item['owner_xchan'] == $importer['channel_hash'])) {
+							$send_downstream = true;
+						}
+					}
+					else {
+						if((! perm_is_allowed($importer['channel_id'],$contact['xchan_hash'],'send_stream')) && (! $importer['system'])) {
+							// @fixme check for and process ostatus autofriend
+							// otherwise 
+
+							logger('Ignoring this author.');
+							continue;
+						}
+					}
+				}
+				else {
 
 					// immediate parent wasn't found. Turn into a top-level post if permissions allow
 					// but save the thread_parent in case we need to refer to it later.
@@ -1071,6 +1244,11 @@ function consume_feed($xml, $importer, &$contact, $pass = 0) {
 
 				$xx = item_store($datarray);
 				$r = $xx['item_id'];
+
+				if($send_downstream) {
+					\Zotlabs\Daemon\Master::Summon(array('Notifier', 'comment', $r));
+				}
+
 				continue;
 			}
 			else {
@@ -1083,10 +1261,30 @@ function consume_feed($xml, $importer, &$contact, $pass = 0) {
 				if(! $datarray['mid'])
 					continue;
 
+				// This probably isn't an appropriate default but we're about to change it
+				// if it's wrong.
+
+				$datarray['comment_policy'] = 'authenticated';
+
+				// A Mastodon privacy tag has been found. We cannot send private comments
+				// through the OStatus protocol, so block commenting.
+
+				if(array_key_exists('item_private',$datarray) && intval($datarray['item_private'])) {
+					$datarray['public_policy'] = 'specific';
+					$datarray['comment_policy'] = 'none';
+				}
+
 				if($contact['xchan_network'] === 'rss') {
 					$datarray['public_policy'] = 'specific';
 					$datarray['comment_policy'] = 'none';
 				}
+
+
+
+				// if we have everything but a photo, provide the default profile photo
+
+				if($author['author_name'] && $author['author_link'] && (! $author['author_photo']))
+					$author['author_photo'] = z_root() . '/' . get_default_profile_photo(80);
 
 				if(is_array($contact)) {
 					if((! x($author,'author_name')) || ($author['author_is_feed']))
@@ -1104,19 +1302,17 @@ function consume_feed($xml, $importer, &$contact, $pass = 0) {
 
 				$datarray['author_xchan'] = '';
 
-				if(activity_match($datarray['verb'],ACTIVITY_FOLLOW) && $datarray['obj_type'] === ACTIVITY_OBJ_PERSON) {
-					$cb = array('item' => $datarray,'channel' => $importer, 'xchan' => [ 'placeholder' => '' ], 'author' => $author, 'caught' => false);
-					call_hooks('follow_from_feed',$cb);
-					if($cb['caught']) {
-						if($cb['return_code'])
-							http_status_exit($cb['return_code']);
-
-						continue;
-					}
-				}
-
 				if($author['author_link'] != $contact['xchan_url']) {
-					$x = import_author_unknown(array('name' => $author['author_name'],'url' => $author['author_link'],'photo' => array('src' => $author['author_photo'])));
+					$name = '';
+					if($author['full_name']) {
+						$name = $author['full_name'];
+						if($author['author_name'])
+							$name .= ' (' . $author['author_name'] . ')';
+					}
+					else {
+						$name = $author['author_name'];
+					}
+					$x = import_author_unknown(array('name' => $name,'url' => $author['author_link'],'photo' => array('src' => $author['author_photo'])));
 					if($x)
 						$datarray['author_xchan'] = $x;
 				}
@@ -1135,7 +1331,7 @@ function consume_feed($xml, $importer, &$contact, $pass = 0) {
 				}
 
 
-				$r = q("SELECT edited FROM item WHERE mid = '%s' AND uid = %d LIMIT 1",
+				$r = q("SELECT id, edited FROM item WHERE mid = '%s' AND uid = %d LIMIT 1",
 					dbesc($datarray['mid']),
 					intval($importer['channel_id'])
 				);
@@ -1149,6 +1345,10 @@ function consume_feed($xml, $importer, &$contact, $pass = 0) {
 						// do not accept (ignore) an earlier edit than one we currently have.
 						if(datetime_convert('UTC','UTC',$datarray['edited']) < $r[0]['edited'])
 							continue;
+
+						$datarray['uid'] = $importer['channel_id'];
+						$datarray['aid'] = $importer['channel_account_id'];
+						$datarray['id'] = $r[0]['id'];
 
 						update_feed_item($importer['channel_id'],$datarray);
 					}
@@ -1180,6 +1380,51 @@ function consume_feed($xml, $importer, &$contact, $pass = 0) {
 			}
 		}
 	}
+}
+
+
+function feed_conversation_fetch($importer,$contact,$parent_link) {
+
+	logger('parent_link: ' . $parent_link, LOGGER_DEBUG, LOG_INFO);
+
+	$link = '';
+
+	// GNU-Social flavoured feeds
+	if(strpos($parent_link,'/notice/')) {
+		$link = str_replace('/notice/','/api/statuses/show/',$parent_link) . '.atom';
+	} 
+
+	// Mastodon flavoured feeds
+	if(strpos($parent_link,'/users/') && strpos($parent_link,'/updates/')) {
+		$link = $parent_link . '.atom';
+	} 
+
+	if(! $link)
+		return false;
+
+	logger('fetching: ' . $link, LOGGER_DEBUG, LOG_INFO);
+
+	$fetch = z_fetch_url($link);
+
+	if(! $fetch['success'])
+		return false;
+
+	$data = $fetch['body'];
+
+	// We will probably receive an atom 'entry' and not an atom 'feed'. Unfortunately
+	// our parser is a bit strict about compliance so we'll insert just enough of a feed 
+	// tag to trick it into believing it's a compliant feed. 
+
+	if(! strstr($data,'<feed')) {
+		$data = str_replace('<entry ','<feed xmlns="http://www.w3.org/2005/Atom"><entry ',$data); 
+		$data .= '</feed>';
+	} 
+ 
+	consume_feed($data,$importer,$contact,1);
+	consume_feed($data,$importer,$contact,2);
+
+	return true;
+	
 }
 
 /**
@@ -1259,7 +1504,7 @@ function process_salmon_feed($xml, $importer) {
 			// reset policies which are restricted by default for RSS connections
 			// This item is likely coming from GNU-social via salmon and allows public interaction
 			$datarray['public_policy'] = '';
-			$datarray['comment_policy'] = '';
+			$datarray['comment_policy'] = 'authenticated';
 
 			$ret['item'] = $datarray;
 		}
@@ -1345,7 +1590,7 @@ function feed_meta($xml) {
  * @param array $datarray
  */
 function update_feed_item($uid, $datarray) {
-	logger('Not implemented! ' . $uid . ' ' . print_r($datarray, true), LOGGER_DATA);
+	item_store_update($datarray);
 }
 
 /**
@@ -1647,101 +1892,5 @@ function atom_entry($item, $type, $author, $owner, $comment = false, $cid = 0, $
 	call_hooks('atom_entry', $x);
 
 	return $x['entry'];
-}
-
-/**
- * @brief
- *
- * @param array $items
- * @return array
- */
-function gen_asld($items) {
-	$ret = array();
-	if(! $items)
-		return $ret;
-
-	foreach($items as $item) {
-		$ret[] = i2asld($item);
-	}
-
-	return $ret;
-}
-
-/**
- * @brief
- *
- * @param array $i
- * @return array
- */
-function i2asld($i) {
-
-	if(! $i)
-		return array();
-
-	$ret = array();
-
-	$ret['@context'] = array( 'http://www.w3.org/ns/activitystreams', 'zot' => 'http://purl.org/zot/protocol');
-
-	if($i['verb']) {
-		if(strpos(dirname($i['verb'],'activitystrea.ms/schema/1.0'))) {
-			$ret['@type'] = ucfirst(basename($i['verb']));
-		}
-		elseif(strpos(dirname($i['verb'],'purl.org/zot'))) {
-			$ret['@type'] = 'zot:' . ucfirst(basename($i['verb']));
-		}
-	}
-	$ret['@id'] = $i['plink'];
-
-	$ret['published'] = datetime_convert('UTC','UTC',$i['created'],ATOM_TIME);
-
-	// we need to pass the parent into this
-//	if($i['id'] != $i['parent'] && $i['obj_type'] === ACTIVITY_OBJ_NOTE) {
-//		$ret['inReplyTo'] = asencode_note
-//	}
-
-	if($i['obj_type'] === ACTIVITY_OBJ_NOTE)
-		$ret['object'] = asencode_note($i);
-
-	$ret['actor'] = asencode_person($i['author']);
-
-	return $ret;
-}
-
-function asencode_note($i) {
-
-	$ret = array();
-
-	$ret['@type'] = 'Note';
-	$ret['@id'] = $i['plink'];
-	if($i['title'])
-		$ret['title'] = bbcode($i['title']);
-
-	$ret['content'] = bbcode($i['body']);
-	$ret['zot:owner'] = asencode_person($i['owner']);
-	$ret['published'] = datetime_convert('UTC','UTC',$i['created'],ATOM_TIME);
-	if($i['created'] !== $i['edited'])
-		$ret['updated'] = datetime_convert('UTC','UTC',$i['edited'],ATOM_TIME);
-
-	return $ret;
-}
-
-
-function asencode_person($p) {
-	$ret = array();
-	$ret['@type'] = 'Person';
-	$ret['@id'] = 'acct:' . $p['xchan_addr'];
-	$ret['displayName'] = $p['xchan_name'];
-	$ret['icon'] = array(
-		'@type' => 'Link',
-		'mediaType' => $p['xchan_photo_mimetype'],
-		'href' => $p['xchan_photo_m']
-	);
-	$ret['url'] = array(
-		'@type' => 'Link',
-		'mediaType' => 'text/html',
-		'href' => $p['xchan_url']
-	);
-
-	return $ret;
 }
 

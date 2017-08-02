@@ -154,7 +154,7 @@ class Network extends \Zotlabs\Web\Controller {
 				));
 			}
 	
-			nav_set_selected('network');
+			nav_set_selected(t('Activity'));
 
 			$channel_acl = array(
 				'allow_cid' => $channel['channel_allow_cid'], 
@@ -325,8 +325,8 @@ class Network extends \Zotlabs\Web\Controller {
 				'$xchan'   => $xchan,
 				'$order'   => $order,
 				'$file'    => $file,
-				'$cats'    => $category,
-				'$tags'    => $hashtags,
+				'$cats'    => urlencode($category),
+				'$tags'    => urlencode($hashtags),
 				'$dend'    => $datequery,
 				'$mid'     => '',
 				'$verb'     => $verb,
@@ -534,12 +534,13 @@ class Network extends \Zotlabs\Web\Controller {
 	
 				if($parents_str) {
 					$update_unseen = " AND ( id IN ( " . dbesc($parents_str) . " )";
+					$update_unseen .= " AND obj_type != '" . dbesc(ACTIVITY_OBJ_FILE) . "'";
 					$update_unseen .= " OR ( parent IN ( " . dbesc($parents_str) . " ) AND verb in ( '" . dbesc(ACTIVITY_LIKE) . "','" . dbesc(ACTIVITY_DISLIKE) . "' ))) ";
 				}
 			}
 			else {
 				if($parents_str) {
-					$update_unseen = " AND parent IN ( " . dbesc($parents_str) . " )";
+					$update_unseen = " AND parent IN ( " . dbesc($parents_str) . " ) AND obj_type != '" . dbesc(ACTIVITY_OBJ_FILE) . "'";
 				}
 			}
 		}
@@ -551,7 +552,7 @@ class Network extends \Zotlabs\Web\Controller {
 	
 		$mode = (($nouveau) ? 'network-new' : 'network');
 	
-		$o .= conversation($a,$items,$mode,$update,$page_mode);
+		$o .= conversation($items,$mode,$update,$page_mode);
 	
 		if(($items) && (! $update))
 			$o .= alt_pager($a,count($items));

@@ -169,6 +169,15 @@ class Apps {
 			$requires = explode(',',$ret['requires']);
 			foreach($requires as $require) {
 				$require = trim(strtolower($require));
+				$config = false;
+
+				if(substr($require, 0, 7) == 'config:') {
+					$config = true;
+					$require = ltrim($require, 'config:');
+				}
+
+				$toggle = (($require[0] == '!') ? 0 : 1);
+
 				switch($require) {
 					case 'nologin':
 						if(local_channel())
@@ -191,10 +200,13 @@ class Apps {
 							unset($ret);
 						break;
 					default:
-						if(! (local_channel() && feature_enabled(local_channel(),$require)))
+						if($config)
+							$unset = ((get_config('system', ltrim($require, '!')) == $toggle) ? false : true);
+						else
+							$unset = ((local_channel() && feature_enabled(local_channel(),$require)) ? false : true);
+						if($unset)
 							unset($ret);
 						break;
-
 				}
 			}
 		}
@@ -209,6 +221,7 @@ class Apps {
 
 	static public function translate_system_apps(&$arr) {
 		$apps = array(
+			'Apps' => t('Apps'),
 			'Site Admin' => t('Site Admin'),
 			'Report Bug' => t('Report Bug'),
 			'View Bookmarks' => t('View Bookmarks'),
@@ -304,8 +317,18 @@ class Apps {
 
 			if($k === 'requires') {
 				$requires = explode(',',$v);
+
 				foreach($requires as $require) {
 					$require = trim(strtolower($require));
+					$config = false;
+
+					if(substr($require, 0, 7) == 'config:') {
+						$config = true;
+						$require = ltrim($require, 'config:');
+					}
+
+					$toggle = (($require[0] == '!') ? 0 : 1);
+
 					switch($require) {
 						case 'nologin':
 							if(local_channel())
@@ -329,10 +352,13 @@ class Apps {
 								return '';
 							break;
 						default:
-							if(! (local_channel() && feature_enabled(local_channel(),$require)))
+							if($config)
+								$unset = ((get_config('system', ltrim($require, '!')) == $toggle) ? false : true);
+							else
+								$unset = ((local_channel() && feature_enabled(local_channel(),$require)) ? false : true);
+							if($unset)
 								return '';
 							break;
-
 					}
 				}
 			}
@@ -663,11 +689,6 @@ class Apps {
 		set_pconfig($uid,'system','app_order',implode(',',$narr));
 
 	}
-
-
-
-
-
 
 	static public function app_decode($s) {
 		$x = base64_decode(str_replace(array('<br />',"\r","\n",' '),array('','','',''),$s));

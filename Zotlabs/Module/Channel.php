@@ -94,7 +94,7 @@ class Channel extends \Zotlabs\Web\Controller {
 		}
 		else {
 			if(\App::$profile['profile_uid'] == local_channel()) {
-				nav_set_selected('home');
+				nav_set_selected(t('Channel Home'));
 			}
 		}
 
@@ -236,9 +236,9 @@ class Channel extends \Zotlabs\Web\Controller {
 
 			if($load || ($checkjs->disabled())) {
 				if($mid) {
-					$r = q("SELECT parent AS item_id from item where mid = '%s' and uid = %d $item_normal
+					$r = q("SELECT parent AS item_id from item where mid like '%s' and uid = %d $item_normal
 						AND item_wall = 1 $sql_extra limit 1",
-						dbesc($mid),
+						dbesc($mid . '%'),
 						intval(\App::$profile['profile_uid'])
 					);
 					if (! $r) {
@@ -325,8 +325,8 @@ class Channel extends \Zotlabs\Web\Controller {
 				'$order' => '',
 				'$list' => ((x($_REQUEST,'list')) ? intval($_REQUEST['list']) : 0),
 				'$file' => '',
-				'$cats' => (($category) ? $category : ''),
-				'$tags' => (($hashtags) ? $hashtags : ''),
+				'$cats' => (($category) ? urlencode($category) : ''),
+				'$tags' => (($hashtags) ? urlencode($hashtags) : ''),
 				'$mid' => $mid,
 				'$verb' => '',
 				'$dend' => $datequery,
@@ -365,10 +365,10 @@ class Channel extends \Zotlabs\Web\Controller {
 
 
 		if($checkjs->disabled()) {
-			$o .= conversation($a,$items,'channel',$update,'traditional');
+			$o .= conversation($items,'channel',$update,'traditional');
 		}
 		else {
-			$o .= conversation($a,$items,'channel',$update,$page_mode);
+			$o .= conversation($items,'channel',$update,$page_mode);
 		}
 
 		if((! $update) || ($checkjs->disabled())) {

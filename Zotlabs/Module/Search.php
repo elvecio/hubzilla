@@ -22,7 +22,7 @@ class Search extends \Zotlabs\Web\Controller {
 		if($load)
 			$_SESSION['loadtime'] = datetime_convert();
 	
-		nav_set_selected('search');
+		nav_set_selected(t('Search'));
 	
 		require_once("include/bbcode.php");
 		require_once('include/security.php');
@@ -81,11 +81,12 @@ class Search extends \Zotlabs\Web\Controller {
 			return $o;
 	
 		if($tag) {
-			$sql_extra = sprintf(" AND item.id IN (select oid from term where otype = %d and ttype in ( %d , %d) and term = '%s') ",
+			$wildtag = str_replace('*','%',$search);
+			$sql_extra = sprintf(" AND item.id IN (select oid from term where otype = %d and ttype in ( %d , %d) and term like '%s') ",
 				intval(TERM_OBJ_POST),
 				intval(TERM_HASHTAG),
 				intval(TERM_COMMUNITYTAG),
-				dbesc(protect_sprintf($search))
+				dbesc(protect_sprintf($wildtag))
 			);
 		}
 		else {
@@ -225,7 +226,7 @@ class Search extends \Zotlabs\Web\Controller {
 		else
 			$o .= '<h2>' . sprintf( t('Search results for: %s'),htmlspecialchars($search, ENT_COMPAT,'UTF-8')) . '</h2>';
 	
-		$o .= conversation($a,$items,'search',$update,'client');
+		$o .= conversation($items,'search',$update,'client');
 	
 		$o .= '</div>';
 	

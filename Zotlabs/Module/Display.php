@@ -140,7 +140,7 @@ class Display extends \Zotlabs\Web\Controller {
 		if((! $update) && (! $load)) {
 	
 
-			$static  = ((local_channel()) ? channel_manual_conv_update(local_channel()) : 0);
+			$static  = ((local_channel()) ? channel_manual_conv_update(local_channel()) : 1);
 	
 			$o .= '<div id="live-display"></div>' . "\r\n";
 			$o .= "<script> var profile_uid = " . ((intval(local_channel())) ? local_channel() : (-1))
@@ -308,12 +308,12 @@ class Display extends \Zotlabs\Web\Controller {
 	
 	
 		if ($checkjs->disabled()) {
-			$o .= conversation($a, $items, 'display', $update, 'traditional');
+			$o .= conversation($items, 'display', $update, 'traditional');
 			if ($items[0]['title'])
 				\App::$page['title'] = $items[0]['title'] . " - " . \App::$page['title'];
 		} 
 		else {
-			$o .= conversation($a, $items, 'display', $update, 'client');
+			$o .= conversation($items, 'display', $update, 'client');
 		}
 	
 		if($updateable) {
