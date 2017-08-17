@@ -453,6 +453,7 @@ class Notifier {
 			'recipients'     => $recipients,
 			'item'           => $item,
 			'target_item'    => $target_item,
+			'parent_item'    => $parent_item,
 			'top_level_post' => $top_level_post,
 			'private'        => $private,
 			'relay_to_owner' => $relay_to_owner,
@@ -532,14 +533,14 @@ class Notifier {
 
 			if($hub['hubloc_network'] == 'zot') {
 				if(! in_array($hub['hubloc_sitekey'],$keys)) {
-					$hublist[] = $hub['hubloc_host'];
+					$hublist[] = $hub['hubloc_host'] . ' ' . $hub['hubloc_network'];
 					$dhubs[]   = $hub;
 					$keys[]    = $hub['hubloc_sitekey'];
 				}
 			}
 			else {
 				if(! in_array($hub['hubloc_url'],$urls)) {
-					$hublist[] = $hub['hubloc_host'];
+					$hublist[] = $hub['hubloc_host'] . ' ' . $hub['hubloc_network'];
 					$dhubs[]   = $hub;
 					$urls[]    = $hub['hubloc_url'];
 				}
@@ -559,6 +560,7 @@ class Notifier {
 					'recipients'     => $recipients,
 					'item'           => $item,
 					'target_item'    => $target_item,
+					'parent_item'    => $parent_item,
 					'hub'            => $hub,
 					'top_level_post' => $top_level_post,
 					'private'        => $private,

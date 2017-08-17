@@ -1,34 +1,32 @@
-<script type="text/javascript" src="view/js/ajaxupload.js" ></script>
-<script language="javascript" type="text/javascript">
-
-	$("#prvmail-text").editor_autocomplete(baseurl+"/acl");
-
-
+<script src="library/blueimp_upload/js/vendor/jquery.ui.widget.js"></script>
+<script src="library/blueimp_upload/js/jquery.iframe-transport.js"></script>
+<script src="library/blueimp_upload/js/jquery.fileupload.js"></script>
+<script>
 	$(document).ready(function() {
 
-		var file_uploader = new window.AjaxUpload(
-			'prvmail-attach-wrapper',
-			{ action: 'wall_attach/{{$nickname}}',
-				name: 'userfile',
-				onSubmit: function(file,ext) { $('#prvmail-rotator').spin('tiny'); },
-				onComplete: function(file,response) {
-					addmailtext(response);
-					$('#prvmail-rotator').spin(false);
-				}
-			}
-		);
+		$("#prvmail-text").editor_autocomplete(baseurl+"/acl");
 
-		var file_uploader_sub = new window.AjaxUpload(
-			'prvmail-attach-sub',
-			{ action: 'wall_attach/{{$nickname}}',
-				name: 'userfile',
-				onSubmit: function(file,ext) { $('#prvmail-rotator').spin('tiny'); },
-				onComplete: function(file,response) {
-					addmailtext(response);
-					$('#prvmail-rotator').spin(false);
-				}
-			}
-		);
+		$('#invisible-wall-file-upload').fileupload({
+			url: 'wall_attach/{{$nickname}}',
+			dataType: 'json',
+			dropZone: $('#prvmail-text'),
+			maxChunkSize: 4 * 1024 * 1024,
+			add: function(e,data) {
+				$('#prvmail-rotator').spin('tiny');
+				data.submit();
+			},
+			done: function(e,data) {
+				addmailtext(data.result.message);
+				$('#jot-media').val($('#jot-media').val() + data.result.message);
+			},
+			stop: function(e,data) {
+				preview_mail();
+				$('#prvmail-rotator').spin(false);
+			},
+		});
+
+		$('#prvmail-attach-wrapper').click(function(event) { event.preventDefault(); $('#invisible-wall-file-upload').trigger('click'); return false;});
+		$('#prvmail-attach-wrapper-sub').click(function(event) { event.preventDefault(); $('#invisible-wall-file-upload').trigger('click'); return false;});
 
 
 	});
@@ -39,6 +37,7 @@
 			$('#prvmail-rotator').spin('tiny');
 			$.get('linkinfo?f=&url=' + reply, function(data) {
 				addmailtext(data);
+				preview_mail();
 				$('#prvmail-rotator').spin(false);
 			});
 		}
@@ -65,6 +64,7 @@
 			$('#prvmail-rotator').spin('tiny');
 			$.get('linkinfo?f=&url=' + reply, function(data) {
 				addmailtext(data);
+				preview_mail();
 				$('#prvmail-rotator').spin(false);
 			});
 		}

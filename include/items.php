@@ -1600,7 +1600,6 @@ function item_store($arr, $allow_exec = false, $deliver = true) {
 	$arr['aid']           = ((x($arr,'aid'))           ? intval($arr['aid'])                           : 0);
 	$arr['mid']           = ((x($arr,'mid'))           ? notags(trim($arr['mid']))                     : random_string());
 	$arr['revision']      = ((x($arr,'revision') && intval($arr['revision']) > 0)   ? intval($arr['revision']) : 0);
-logger('revision: ' . $arr['revision']);
 
 	$arr['author_xchan']  = ((x($arr,'author_xchan'))  ? notags(trim($arr['author_xchan']))  : '');
 	$arr['owner_xchan']   = ((x($arr,'owner_xchan'))   ? notags(trim($arr['owner_xchan']))   : '');
@@ -3929,8 +3928,8 @@ function items_fetch($arr,$channel = null,$observer_hash = null,$client_mode = C
 		}
 	}
 
-	if(intval($arr['compat']) === 1) {
-		$sql_extra = " AND author_xchan = owner_xchan and item_wall = 1 and item_private = 0 ";
+	if($channel && intval($arr['compat']) === 1) {
+		$sql_extra = " AND author_xchan = '" . $channel['channel_hash'] . "' and item_private = 0 ";
 	}
 
 	if ($arr['datequery']) {
@@ -3938,11 +3937,6 @@ function items_fetch($arr,$channel = null,$observer_hash = null,$client_mode = C
 	}
 	if ($arr['datequery2']) {
 		$sql_extra3 .= protect_sprintf(sprintf(" AND item.created >= '%s' ", dbesc(datetime_convert('UTC','UTC',$arr['datequery2']))));
-	}
-
-	if(! array_key_exists('nouveau',$arr)) {
-		$sql_extra2 = " AND item.parent = item.id ";
-//		$sql_extra3 = '';
 	}
 
 	if($arr['search']) {
@@ -4016,7 +4010,8 @@ function items_fetch($arr,$channel = null,$observer_hash = null,$client_mode = C
 	if($arr['item_type'] === '*')
 		$item_restrict = '';
 
-	if ($arr['nouveau'] && ($client_mode & CLIENT_MODE_LOAD) && $channel) {
+	if ((($arr['compat']) || ($arr['nouveau'] && ($client_mode & CLIENT_MODE_LOAD))) && $channel) {
+
 		// "New Item View" - show all items unthreaded in reverse created date order
 
 		$items = q("SELECT item.*, item.id AS item_id FROM item

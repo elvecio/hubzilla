@@ -407,6 +407,7 @@ class ThreadItem {
 			'showdislike' => $showdislike,
 			'comment' => $this->get_comment_box($indent),
 			'previewing' => ($conv->is_preview() ? true : false ),
+			'preview_lbl' => t('This is an unsaved preview'),
 			'wait' => t('Please wait'),
 			'submid' => str_replace(['+','='], ['',''], base64_encode(substr($item['mid'],0,32))),
 			'thread_level' => $thread_level
@@ -712,7 +713,6 @@ class ThreadItem {
 		call_hooks('comment_buttons',$arr);
 		$comment_buttons = $arr['comment_buttons'];
 
-
 		$comment_box = replace_macros($template,array(
 			'$return_path' => '',
 			'$threaded' => $this->is_threaded(),
@@ -734,19 +734,21 @@ class ThreadItem {
 			'$edquote' => t('Quote'),
 			'$edcode' => t('Code'),
 			'$edimg' => t('Image'),
+			'$edatt' => t('Attach File'),
 			'$edurl' => t('Insert Link'),
 			'$edvideo' => t('Video'),
 			'$preview' => t('Preview'), // ((feature_enabled($conv->get_profile_owner(),'preview')) ? t('Preview') : ''),
 			'$indent' => $indent,
+			'$can_upload' => (perm_is_allowed($conv->get_profile_owner(),get_observer_hash(),'write_storage') && $conv->is_uploadable()),
 			'$feature_encrypt' => ((feature_enabled($conv->get_profile_owner(),'content_encrypt')) ? true : false),
 			'$encrypt' => t('Encrypt text'),
 			'$cipher' => $conv->get_cipher(),
 			'$sourceapp' => \App::$sourcename,
 			'$observer' => get_observer_hash(),
 			'$anoncomments' => (($conv->get_mode() === 'channel' && perm_is_allowed($conv->get_profile_owner(),'','post_comments')) ? true : false),
-			'$anonname' => [ 'anonname', t('Your full name (required)'),'','' ],
-			'$anonmail' => [ 'anonmail', t('Your email address (required)'),'','' ],
-			'$anonurl'  => [ 'anonurl',  t('Your website URL (optional)'),'','' ]
+			'$anonname' => [ 'anonname', t('Your full name (required)'),'','','','onBlur="commentCloseUI(this,\'' . $this->get_id() . '\')"' ],
+			'$anonmail' => [ 'anonmail', t('Your email address (required)'),'','','','onBlur="commentCloseUI(this,\'' . $this->get_id() . '\')"' ],
+			'$anonurl'  => [ 'anonurl',  t('Your website URL (optional)'),'','','','onBlur="commentCloseUI(this,\'' . $this->get_id() . '\')"' ]
 		));
 
 		return $comment_box;

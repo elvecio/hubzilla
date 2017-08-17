@@ -467,6 +467,7 @@ function conversation($items, $mode, $update, $page_mode = 'traditional', $prepa
 
 	$preview = (($page_mode === 'preview') ? true : false);
 	$previewing = (($preview) ? ' preview ' : '');
+	$preview_lbl = t('This is an unsaved preview');
 
 	if ($mode === 'network') {
 
@@ -537,7 +538,7 @@ function conversation($items, $mode, $update, $page_mode = 'traditional', $prepa
 	}
 
 	elseif ($mode === 'photos') {
-		$profile_onwer = App::$profile['profile_uid'];
+		$profile_owner = App::$profile['profile_uid'];
 		$page_writeable = ($profile_owner == local_channel());
 		$live_update_div = '<div id="live-photos"></div>' . "\r\n";
 		// for photos we've already formatted the top-level item (the photo)
@@ -548,6 +549,19 @@ function conversation($items, $mode, $update, $page_mode = 'traditional', $prepa
 
 	if (! feature_enabled($profile_owner,'multi_delete'))
 		$page_dropping = false;
+
+	$uploading = true;
+
+	if($profile_owner > 0) {
+		$owner_channel = channelx_by_n($profile_owner);
+		if($owner_channel['channel_allow_cid'] || $owner_channel['channel_allow_gid']
+			|| $owner_channel['channel_deny_cid'] || $owner_channel['channel_deny_gid']) {
+			$uploading = false;
+		}
+	}
+	else {
+		$uploading = false;
+	}
 
 
 	$channel = App::get_channel();
@@ -684,6 +698,7 @@ function conversation($items, $mode, $update, $page_mode = 'traditional', $prepa
 					'mode' => $mode,
 					'approve' => t('Approve'),
 					'delete' => t('Delete'),
+					'preview_lbl' => $preview_lbl,
 					'id' => (($preview) ? 'P0' : $item['item_id']),
 					'linktitle' => sprintf( t('View %s\'s profile @ %s'), $profile_name, $profile_url),
 					'profile_url' => $profile_link,
@@ -751,7 +766,7 @@ function conversation($items, $mode, $update, $page_mode = 'traditional', $prepa
 			// Normal View
 //			logger('conv: items: ' . print_r($items,true));
 
-			$conv = new Zotlabs\Lib\ThreadStream($mode, $preview, $prepared_item);
+			$conv = new Zotlabs\Lib\ThreadStream($mode, $preview, $uploading, $prepared_item);
 
 			// In the display mode we don't have a profile owner. 
 
@@ -1622,11 +1637,9 @@ function network_tabs() {
 	// tabs
 	$tabs = array();
 
-	$d = get_config('system','disable_discover_tab');
-	if($d === false)
-		$d = 1;
+	$disable_discover_tab = get_config('system','disable_discover_tab') || get_config('system','disable_discover_tab') === false;
 
-	if(! $d) {
+	if(! $disable_discover_tab) {
 		$tabs[] = array(
 			'label' => t('Discover'),
 			'url' => z_root() . '/' . $cmd . '?f=&fh=1' ,

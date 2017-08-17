@@ -409,8 +409,9 @@ class Network extends \Zotlabs\Web\Controller {
 		}
 	
 		$abook_uids = " and abook.abook_channel = " . local_channel() . " ";
-	
-		if($firehose && (! get_config('system','disable_discover_tab'))) {
+
+		$disable_discover_tab = get_config('system','disable_discover_tab') || get_config('system','disable_discover_tab') === false;
+		if($firehose && (! $disable_discover_tab)) {
 			require_once('include/channel.php');
 			$sys = get_sys_channel();
 			$uids = " and item.uid  = " . intval($sys['channel_id']) . " ";
@@ -545,10 +546,15 @@ class Network extends \Zotlabs\Web\Controller {
 			}
 		}
 	
-		if(($update_unseen) && (! $firehose))
-			$r = q("UPDATE item SET item_unseen = 0 WHERE item_unseen = 1 AND uid = %d $update_unseen ",
-				intval(local_channel())
-			);
+		if(($update_unseen) && (! $firehose)) {
+			$x = [ 'channel_id' => local_channel(), 'update' => 'unset' ];
+			call_hooks('update_unseen',$x);
+			if($x['update'] === 'unset' || intval($x['update'])) {
+				$r = q("UPDATE item SET item_unseen = 0 WHERE item_unseen = 1 AND uid = %d $update_unseen ",
+					intval(local_channel())
+				);
+			}
+		}
 	
 		$mode = (($nouveau) ? 'network-new' : 'network');
 	
