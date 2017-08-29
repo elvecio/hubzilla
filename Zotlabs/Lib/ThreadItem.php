@@ -29,6 +29,7 @@ class ThreadItem {
 	private $visiting = false;
 	private $channel = null;
 	private $display_mode = 'normal';
+	private $reload = '';
 
 
 	public function __construct($data) {
@@ -101,10 +102,13 @@ class ThreadItem {
 		if($item['author']['xchan_network'] === 'rss')
 			$shareable = true;
 
+
 		$mode = $conv->get_mode();
 
+		$edlink = (($item['item_type'] == ITEM_TYPE_CARD) ? 'card_edit' : 'editpost');
+
 		if(local_channel() && $observer['xchan_hash'] === $item['author_xchan'])
-			$edpost = array(z_root()."/editpost/".$item['id'], t("Edit"));
+			$edpost = array(z_root() . '/' . $edlink . '/' . $item['id'], t('Edit'));
 		else
 			$edpost = false;
 
@@ -480,6 +484,14 @@ class ThreadItem {
 		return $this->threaded;
 	}
 
+	public function set_reload($val) {
+		$this->reload = $val;
+	}
+
+	public function get_reload() {
+		return $this->reload;
+	}
+
 	public function set_commentable($val) {
 		$this->commentable = $val;
 		foreach($this->get_children() as $child)
@@ -716,7 +728,7 @@ class ThreadItem {
 		$comment_box = replace_macros($template,array(
 			'$return_path' => '',
 			'$threaded' => $this->is_threaded(),
-			'$jsreload' => '', //(($conv->get_mode() === 'display') ? $_SESSION['return_url'] : ''),
+			'$jsreload' => $conv->reload,
 			'$type' => (($conv->get_mode() === 'channel') ? 'wall-comment' : 'net-comment'),
 			'$id' => $this->get_id(),
 			'$parent' => $this->get_id(),
@@ -746,9 +758,9 @@ class ThreadItem {
 			'$sourceapp' => \App::$sourcename,
 			'$observer' => get_observer_hash(),
 			'$anoncomments' => (($conv->get_mode() === 'channel' && perm_is_allowed($conv->get_profile_owner(),'','post_comments')) ? true : false),
-			'$anonname' => [ 'anonname', t('Your full name (required)'),'','','','onBlur="commentCloseUI(this,\'' . $this->get_id() . '\')"' ],
-			'$anonmail' => [ 'anonmail', t('Your email address (required)'),'','','','onBlur="commentCloseUI(this,\'' . $this->get_id() . '\')"' ],
-			'$anonurl'  => [ 'anonurl',  t('Your website URL (optional)'),'','','','onBlur="commentCloseUI(this,\'' . $this->get_id() . '\')"' ]
+			'$anonname' => [ 'anonname', t('Your full name (required)') ],
+			'$anonmail' => [ 'anonmail', t('Your email address (required)') ],
+			'$anonurl'  => [ 'anonurl',  t('Your website URL (optional)') ]
 		));
 
 		return $comment_box;

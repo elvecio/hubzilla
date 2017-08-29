@@ -1,6 +1,55 @@
 
 function confirmDelete() { return confirm(aStr.delitem); }
 
+function handle_comment_form(e) {
+	e.stopPropagation();
+
+	//handle eventual expanded forms
+	var expanded = $('.comment-edit-text.expanded');
+	var i = 0;
+
+	if(expanded.length) {
+		expanded.each(function() {
+			var ex_form = $(expanded[i].form);
+			var ex_fields = ex_form.find(':input[type=text], textarea');
+			var ex_fields_empty = true;
+
+			ex_fields.each(function() {
+				if($(this).val() != '')
+					ex_fields_empty = false;
+			});
+			if(ex_fields_empty) {
+				ex_form.find('.comment-edit-text').removeClass('expanded').attr('placeholder', aStr.comment);
+				ex_form.find(':not(.comment-edit-text)').hide();
+			}
+			i++
+		});
+	}
+
+	// handle clicked form
+	var form = $(this);
+	var fields = form.find(':input[type=text], textarea');
+	var fields_empty = true;
+
+	if(form.find('.comment-edit-text').length) {
+		form.find('.comment-edit-text').addClass('expanded').removeAttr('placeholder');
+		form.find(':not(:visible)').show();
+	}
+
+	// handle click outside of form (close empty forms)
+	$(document).on('click', function(e) {
+		fields.each(function() {
+			if($(this).val() != '')
+				fields_empty = false;
+		});
+		if(fields_empty) {
+			form.find('.comment-edit-text').removeClass('expanded').attr('placeholder', aStr.comment);
+			form.find(':not(.comment-edit-text)').hide();
+		}
+	});
+}
+
+/*
 function commentOpenUI(obj, id) {
 	$(document).unbind( "click.commentOpen", handler );
 
@@ -44,8 +93,7 @@ function commentCloseUI(obj, id) {
 function commentOpen(obj, id) {
 	if(obj.value == aStr.comment) {
 		obj.value = '';
-		$("#comment-edit-text-" + id).addClass("comment-edit-text-full");
-		$("#comment-edit-text-" + id).removeClass("comment-edit-text-empty");
+		$("#comment-edit-text-" + id).addClass("expanded");
 		$("#mod-cmnt-wrap-" + id).show();
 		$("#comment-tools-" + id).show();
 		$("#comment-edit-anon-" + id).show();
@@ -53,12 +101,11 @@ function commentOpen(obj, id) {
 	}
 	return false;
 }
-
+*/
 function commentClose(obj, id) {
 	if(obj.value === '') {
 		obj.value = aStr.comment;
-		$("#comment-edit-text-" + id).removeClass("comment-edit-text-full");
-		$("#comment-edit-text-" + id).addClass("comment-edit-text-empty");
+		$("#comment-edit-text-" + id).removeClass("expanded");
 		$("#mod-cmnt-wrap-" + id).hide();
 		$("#comment-tools-" + id).hide();
 		$("#comment-edit-anon-" + id).hide();
@@ -66,6 +113,7 @@ function commentClose(obj, id) {
 	}
 	return false;
 }
+
 
 function showHideCommentBox(id) {
 	if( $('#comment-edit-form-' + id).is(':visible')) {
@@ -79,8 +127,7 @@ function commentInsert(obj, id) {
 	var tmpStr = $("#comment-edit-text-" + id).val();
 	if(tmpStr == '$comment') {
 		tmpStr = '';
-		$("#comment-edit-text-" + id).addClass("comment-edit-text-full");
-		$("#comment-edit-text-" + id).removeClass("comment-edit-text-empty");
+		$("#comment-edit-text-" + id).addClass("expanded");
 		openMenu("comment-tools-" + id);
 	}
 	var ins = $(obj).html();
@@ -101,8 +148,7 @@ function insertbbcomment(comment, BBcode, id) {
 	var tmpStr = $("#comment-edit-text-" + id).val();
 	if(tmpStr == comment) {
 		tmpStr = "";
-		$("#comment-edit-text-" + id).addClass("comment-edit-text-full");
-		$("#comment-edit-text-" + id).removeClass("comment-edit-text-empty");
+		$("#comment-edit-text-" + id).addClass("expanded");
 		openMenu("comment-tools-" + id);
 		$("#comment-edit-text-" + id).val(tmpStr);
 	}
@@ -160,8 +206,7 @@ function insertCommentURL(comment, id) {
 			var tmpStr = $("#comment-edit-text-" + id).val();
 			if(tmpStr == comment) {
 				tmpStr = "";
-				$("#comment-edit-text-" + id).addClass("comment-edit-text-full");
-				$("#comment-edit-text-" + id).removeClass("comment-edit-text-empty");
+				$("#comment-edit-text-" + id).addClass("expanded");
 				openMenu("comment-tools-" + id);
 				$("#comment-edit-text-" + id).val(tmpStr);
 			}
@@ -183,8 +228,7 @@ function qCommentInsert(obj, id) {
 	var tmpStr = $("#comment-edit-text-" + id).val();
 	if(tmpStr == aStr.comment) {
 		tmpStr = '';
-		$("#comment-edit-text-" + id).addClass("comment-edit-text-full");
-		$("#comment-edit-text-" + id).removeClass("comment-edit-text-empty");
+		$("#comment-edit-text-" + id).addClass("expanded");
 		openMenu("comment-edit-submit-wrapper-" + id);
 	}
 	var ins = $(obj).val();
@@ -380,8 +424,9 @@ function NavUpdate() {
 				if($('#live-pubstream').length)  { src = 'pubstream'; liveUpdate(); }
 				if($('#live-display').length)    { src = 'display'; liveUpdate(); }
 				if($('#live-search').length)     { src = 'search'; liveUpdate(); }
+				// if($('#live-cards').length)      { src = 'cards'; liveUpdate(); }
 
-				if($('#live-photos').length) {
+				if($('#live-photos').length || $('#live-cards').length) {
 					if(liking) {
 						liking = 0;
 						window.location.href=window.location.href;
@@ -532,133 +577,77 @@ function updatePageItems(mode, data) {
 
 function updateConvItems(mode,data) {
 
-	if(mode === 'update') {
+	if(mode === 'update' || mode === 'replace') {
 		prev = 'threads-begin';
-
-		$('.thread-wrapper.toplevel_item',data).each(function() {
-
-			var ident = $(this).attr('id');
-			// This should probably use the context argument instead
-			var commentWrap = $('#'+ident+' .collapsed-comments').attr('id');
-			var itmId = 0;
-			var isVisible = false;
-
-			if(typeof commentWrap !== 'undefined')
-				itmId = commentWrap.replace('collapsed-comments-','');
-				
-			if($('#' + ident).length == 0 && profile_page == 1) {
-				$('img',this).each(function() {
-					$(this).attr('src',$(this).attr('dst'));
-				});
-				if($('#collapsed-comments-'+itmId).is(':visible'))
-					isVisible = true;
-				$('#' + prev).after($(this));
-				if(isVisible)
-					showHideComments(itmId);
-				$("> .wall-item-outside-wrapper .autotime, > .thread-wrapper .autotime",this).timeago();
-				$("> .shared_header .autotime",this).timeago();
-			}
-			else {
-				$('img',this).each(function() {
-					$(this).attr('src',$(this).attr('dst'));
-				});
-				if($('#collapsed-comments-'+itmId).is(':visible'))
-					isVisible = true;
-				$('#' + ident).replaceWith($(this));
-				if(isVisible)
-					showHideComments(itmId);
-				$("> .wall-item-outside-wrapper .autotime, > .thread-wrapper .autotime",this).timeago();
-				$("> .shared_header .autotime",this).timeago();
-			}
-			prev = ident;
-		});
 	}
 	if(mode === 'append') {
-
 		next = 'threads-end';
-
-		$('.thread-wrapper.toplevel_item',data).each(function() {
-			var ident = $(this).attr('id');
-			var commentWrap = $('#'+ident+' .collapsed-comments').attr('id');
-			var itmId = 0;
-			var isVisible = false;
-
-			if(typeof commentWrap !== 'undefined')
-				itmId = commentWrap.replace('collapsed-comments-', '');
-
-			if($('#' + ident).length == 0) {
-				$('img',this).each(function() {
-					$(this).attr('src',$(this).attr('dst'));
-				});
-				if($('#collapsed-comments-'+itmId).is(':visible'))
-					isVisible = true;
-				$('#threads-end').before($(this));
-				if(isVisible)
-					showHideComments(itmId);
-				$("> .wall-item-outside-wrapper .autotime, > .thread-wrapper .autotime",this).timeago();
-				$("> .shared_header .autotime",this).timeago();
-			}
-			else {
-				$('img',this).each(function() {
-					$(this).attr('src', $(this).attr('dst'));
-				});
-				if($('#collapsed-comments-'+itmId).is(':visible'))
-					isVisible = true;
-				$('#' + ident).replaceWith($(this));
-				if(isVisible)
-					showHideComments(itmId);
-				$("> .wall-item-outside-wrapper .autotime, > .thread-wrapper .autotime",this).timeago();
-				$("> .shared_header .autotime",this).timeago();
-			}
-		});
-
-		if(loadingPage) {
-			loadingPage = false;
-		}
 	}
+	
 	if(mode === 'replace') {
-		// clear existing content
-		$('.thread-wrapper').remove();
+		$('.thread-wrapper').remove(); // clear existing content
+	}
 
-		prev = 'threads-begin';
+	$('.thread-wrapper.toplevel_item',data).each(function() {
 
-		$('.thread-wrapper.toplevel_item',data).each(function() {
+		var ident = $(this).attr('id');
 
-			var ident = $(this).attr('id');
-			var commentWrap = $('#'+ident+' .collapsed-comments').attr('id');
-			var itmId = 0;
-			var isVisible = false;
+		var commentWrap = $('#'+ident+' .collapsed-comments').attr('id');
+		var itmId = 0;
+		var isVisible = false;
 
-			if(typeof commentWrap !== 'undefined')
-				itmId = commentWrap.replace('collapsed-comments-','');
+		// figure out the comment state
+		if(typeof commentWrap !== 'undefined')
+			itmId = commentWrap.replace('collapsed-comments-','');
+				
+		if($('#collapsed-comments-'+itmId).is(':visible'))
+			isVisible = true;
 
-			if($('#' + ident).length == 0 && profile_page == 1) {
-				$('img',this).each(function() {
-					$(this).attr('src',$(this).attr('dst'));
-				});
-				if($('#collapsed-comments-'+itmId).is(':visible'))
-					isVisible = true;
-				$('#' + prev).after($(this));
-				if(isVisible)
-					showHideComments(itmId);
-				$("> .wall-item-outside-wrapper .autotime, > .thread-wrapper .autotime",this).timeago();
-				$("> .shared_header .autotime",this).timeago();
+		// insert the content according to the mode and first_page 
+		// and whether or not the content exists already (overwrite it)
+
+		if($('#' + ident).length == 0) {
+			if((mode === 'update' || mode === 'replace') && profile_page == 1) {
+					$('#' + prev).after($(this));
+				prev = ident;
 			}
-			prev = ident;
-		});
+			if(mode === 'append') {
+				$('#' + next).before($(this));
+			}
+		}
+		else {
+			$('#' + ident).replaceWith($(this));
+		}		
 
-		if(loadingPage) {
+		// set the comment state to the state we discovered earlier
+
+		if(isVisible)
+			showHideComments(itmId);
+
+		// trigger the autotime function on all newly created content
+
+		$("> .wall-item-outside-wrapper .autotime, > .thread-wrapper .autotime",this).timeago();
+		$("> .shared_header .autotime",this).timeago();
+		
+		if((mode === 'append' || mode === 'replace') && (loadingPage)) {
 			loadingPage = false;
 		}
 
-		if (window.location.search.indexOf("mid=") != -1 || window.location.pathname.indexOf("display") != -1) {
-			var title = $(".wall-item-title").text();
-			title.replace(/^\s+/, '');
-			title.replace(/\s+$/, '');
-			if (title)
-				document.title = title + " - " + document.title;
+		// if single thread view and  the item has a title, display it in the title bar
+
+		if(mode === 'replace') {
+			if (window.location.search.indexOf("mid=") != -1 || window.location.pathname.indexOf("display") != -1) {
+				var title = $(".wall-item-title").text();
+				title.replace(/^\s+/, '');
+				title.replace(/\s+$/, '');
+				if (title) {
+					savedTitle = title + " " + savedTitle;
+				}
+			}
 		}
-	}
+	});
+
+	// reset rotators and cursors we may have set before reaching this place
 
 	$('.like-rotator').spin(false);
 
@@ -666,6 +655,9 @@ function updateConvItems(mode,data) {
 		commentBusy = false;
 		$('body').css('cursor', 'auto');
 	}
+
+	// Setup to determine if the media player is playing. This affects
+	// some content loading decisions. 
 
 	$('video').off('playing');
 	$('video').off('pause');
@@ -780,7 +772,7 @@ function collapseHeight() {
 function liveUpdate() {
 	if(typeof profile_uid === 'undefined') profile_uid = false; /* Should probably be unified with channelId defined in head.tpl */
 	if((src === null) || (stopped) || (! profile_uid)) { $('.like-rotator').spin(false); return; }
-	if(($('.comment-edit-text-full').length) || (in_progress)) {
+	if(($('.comment-edit-text.expanded').length) || (in_progress)) {
 		if(livetime) {
 			clearTimeout(livetime);
 		}
@@ -1136,8 +1128,10 @@ function post_comment(id) {
 				$("#comment-edit-wrapper-" + id).hide();
 				$("#comment-edit-text-" + id).val('');
 				var tarea = document.getElementById("comment-edit-text-" + id);
-				if(tarea)
+				if(tarea) {
 					commentClose(tarea, id);
+					$(document).unbind( "click.commentOpen");
+				}
 				if(timer) clearTimeout(timer);
 				timer = setTimeout(NavUpdate,1500);
 			}
@@ -1364,8 +1358,9 @@ Array.prototype.remove = function(item) {
 	return this.push.apply(this, rest);
 };
 
-
 $(document).ready(function() {
+
+	$(document).on('click focus', '.comment-edit-form', handle_comment_form);
 
 	jQuery.timeago.settings.strings = {
 		prefixAgo     : aStr['t01'],

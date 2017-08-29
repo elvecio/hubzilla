@@ -39,7 +39,7 @@ class Display extends \Zotlabs\Web\Controller {
 		$observer_is_owner = false;
 		$updateable = false;
 	
-	
+
 		if(local_channel() && (! $update)) {
 	
 			$channel = \App::get_channel();
@@ -96,8 +96,7 @@ class Display extends \Zotlabs\Web\Controller {
 			$item_hash = $decoded;
 
 		$r = q("select id, uid, mid, parent_mid, item_type, item_deleted from item where mid like '%s' limit 1",
-			dbesc($item_hash . '%'),
-			dbesc($decoded . '%')
+			dbesc($item_hash . '%')
 		);
 	
 		if($r) {
@@ -175,8 +174,13 @@ class Display extends \Zotlabs\Web\Controller {
 				'$verb' => '',
 				'$mid' => $item_hash
 			));
-	
-	
+
+			head_add_link([ 
+				'rel'   => 'alternate',
+				'type'  => 'application/json+oembed',
+				'href'  => z_root() . '/oep?f=&url=' . urlencode(z_root() . '/' . \App::$query_string),
+				'title' => 'oembed'
+			]);
 		}
 	
 		$observer_hash = get_observer_hash();
@@ -215,17 +219,17 @@ class Display extends \Zotlabs\Web\Controller {
 				if($r === null) {
 	
 					// in case somebody turned off public access to sys channel content using permissions
-					// make that content unsearchable by ensuring the owner_xchan can't match
+					// make that content unsearchable by ensuring the owner uid can't match
 	
 					if(! perm_is_allowed($sysid,$observer_hash,'view_stream'))
 						$sysid = 0;
-	
+
 	
 					$r = q("SELECT item.id as item_id from item
 						WHERE mid = '%s'
 						AND (((( item.allow_cid = ''  AND item.allow_gid = '' AND item.deny_cid  = '' 
 						AND item.deny_gid  = '' AND item_private = 0 ) 
-						and owner_xchan in ( " . stream_perms_xchans(($observer_hash) ? (PERMS_NETWORK|PERMS_PUBLIC) : PERMS_PUBLIC) . " ))
+						and uid in ( " . stream_perms_api_uids(($observer_hash) ? (PERMS_NETWORK|PERMS_PUBLIC) : PERMS_PUBLIC) . " ))
 						OR uid = %d )
 						$sql_extra )
 						$item_normal
@@ -233,7 +237,7 @@ class Display extends \Zotlabs\Web\Controller {
 						dbesc($target_item['parent_mid']),
 						intval($sysid)
 					);
-	
+
 				}
 			}
 		}
@@ -324,12 +328,9 @@ class Display extends \Zotlabs\Web\Controller {
 		}
 
 		$o .= '<div id="content-complete"></div>';
-	
-		return $o;
-	
-	
-	/*
-		elseif((! $update) && (!  {
+
+		
+		if((($update && $load) || $checkjs->disabled()) && (! $items))  {
 			
 			$r = q("SELECT id, item_flags FROM item WHERE id = '%s' OR mid = '%s' LIMIT 1",
 				dbesc($item_hash),
@@ -348,7 +349,9 @@ class Display extends \Zotlabs\Web\Controller {
 			}
 	
 		}
-	*/
+
+		return $o;
+
 	}
 	
 	
