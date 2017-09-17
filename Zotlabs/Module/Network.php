@@ -44,6 +44,7 @@ class Network extends \Zotlabs\Web\Controller {
 	
 		$channel = \App::get_channel();
 		$item_normal = item_normal();
+		$item_normal_update = item_normal_update();
 	
 		$datequery = $datequery2 = '';
 	
@@ -477,10 +478,11 @@ class Network extends \Zotlabs\Web\Controller {
 	
 			}
 			else {
+
 				// this is an update
 				$r = q("SELECT item.parent AS item_id FROM item
 					left join abook on ( item.owner_xchan = abook.abook_xchan $abook_uids )
-					WHERE true $uids $item_normal $simple_update
+					WHERE true $uids $item_normal_update $simple_update
 					and (abook.abook_blocked = 0 or abook.abook_flags is null)
 					$sql_extra3 $sql_extra $sql_nets "
 				);
@@ -509,7 +511,7 @@ class Network extends \Zotlabs\Web\Controller {
 			else {
 				$items = array();
 			}
-	
+
 			if($page_mode === 'list') {
 	
 				/**

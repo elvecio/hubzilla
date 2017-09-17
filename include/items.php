@@ -182,6 +182,12 @@ function item_normal_search() {
 		and item.item_blocked = 0 ";
 }
 
+function item_normal_update() {
+	return " and item.item_hidden = 0 and item.item_type = 0
+		and item.item_unpublished = 0 and item.item_delayed = 0 and item.item_pending_remove = 0
+		and item.item_blocked = 0 ";
+}
+
 
 /**
  * @brief
@@ -1998,17 +2004,17 @@ function item_store_update($arr,$allow_exec = false, $deliver = true) {
 		$arr = $translate['item'];
 	}
 
-	if((x($arr,'obj')) && is_array($arr['obj'])) {
+	if((array_key_exists('obj',$arr)) && is_array($arr['obj'])) {
 		activity_sanitise($arr['obj']);
 		$arr['obj'] = json_encode($arr['obj']);
 	}
 
-	if((x($arr,'target')) && is_array($arr['target'])) {
+	if((array_key_exists('target',$arr)) && is_array($arr['target'])) {
 		activity_sanitise($arr['target']);
 		$arr['target'] = json_encode($arr['target']);
 	}
 
-	if((x($arr,'attach')) && is_array($arr['attach'])) {
+	if((array_key_exists('attach',$arr)) && is_array($arr['attach'])) {
 		activity_sanitise($arr['attach']);
 		$arr['attach'] = json_encode($arr['attach']);
 	}

@@ -987,7 +987,7 @@ function chanlink_cid($d) {
 
 function magiclink_url($observer,$myaddr,$url) {
 	return (($observer)
-		? z_root() . '/magic?f=&dest=' . $url . '&addr=' . $myaddr
+		? z_root() . '/magic?f=&owa=1&dest=' . $url . '&addr=' . $myaddr
 		: $url
 	);
 }
@@ -1389,7 +1389,7 @@ function theme_attachments(&$item) {
 			if(is_foreigner($item['author_xchan']))
 				$url = $r['href'];
 			else
-				$url = z_root() . '/magic?f=&hash=' . $item['author_xchan'] . '&dest=' . $r['href'] . '/' . $r['revision'];
+				$url = z_root() . '/magic?f=&owa=1&hash=' . $item['author_xchan'] . '&dest=' . $r['href'] . '/' . $r['revision'];
 
 			//$s .= '<a href="' . $url . '" title="' . $title . '" class="attachlink"  >' . $icon . '</a>';
 			$attaches[] = array('label' => $label, 'url' => $url, 'icon' => $icon, 'title' => $title);
@@ -1786,15 +1786,15 @@ function layout_select($channel_id, $current = '') {
 }
 
 
-function mimetype_select($channel_id, $current = 'text/bbcode') {
+function mimetype_select($channel_id, $current = 'text/bbcode', $choices = null, $element = 'mimetype') {
 
-	$x = array(
+	$x = (($choices) ? $choices : [
 		'text/bbcode',
 		'text/html',
 		'text/markdown',
 		'text/plain',
 		'application/x-pdl'
-	);
+	]);
 
 
 	if((App::$is_sys) || (channel_codeallowed($channel_id) && $channel_id == local_channel())){
@@ -1807,7 +1807,7 @@ function mimetype_select($channel_id, $current = 'text/bbcode') {
 	}
 
 	$o = replace_macros(get_markup_template('field_select_raw.tpl'), array(
-		'$field'	=> array('mimetype', t('Page content type'), $selected, '', $options)
+		'$field'	=> array( $element, t('Page content type'), $selected, '', $options)
 	));
 
 	return $o;
@@ -1984,14 +1984,14 @@ function is_a_date_arg($s) {
 }
 
 function legal_webbie($s) {
-	if(! strlen($s))
+	if(! $s)
 		return '';
 
-	// WARNING: This regex will not work in a federated environment.
+	// WARNING: This regex may not work in a federated environment.
 	// You will probably want something like 
 	// preg_replace('/([^a-z0-9\_])/','',strtolower($s));
 
-	$r = preg_replace('/([^a-z0-9\-\_\.])/','',strtolower($s));
+	$r = preg_replace('/([^a-z0-9\-\_])/','',strtolower($s));
 
 	$x = [ 'input' => $s, 'output' => $r ];
 	call_hooks('legal_webbie',$x);
@@ -2003,7 +2003,7 @@ function legal_webbie_text() {
 
 	// WARNING: This will not work in a federated environment.
 
-	$s = t('a-z, 0-9, -, _, and . only');
+	$s = t('a-z, 0-9, -, and _ only');
 
 	$x = [ 'text' => $s ];
 	call_hooks('legal_webbie_text',$x);

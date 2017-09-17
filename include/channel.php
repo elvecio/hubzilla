@@ -7,6 +7,7 @@ require_once('include/zot.php');
 require_once('include/crypto.php');
 require_once('include/menu.php');
 require_once('include/perm_upgrade.php');
+require_once('include/photo/photo_driver.php');
 
 /**
  * @brief Called when creating a new channel.
@@ -52,7 +53,7 @@ function identity_check_service_class($account_id) {
  *
  * This action is pluggable.
  * We're currently only checking for an empty name or one that exceeds our
- * storage limit (255 chars). 255 chars is probably going to create a mess on
+ * storage limit (191 chars). 191 chars is probably going to create a mess on
  * some pages.
  * Plugins can set additional policies such as full name requirements, character
  * sets, multi-byte length, etc.
@@ -67,7 +68,7 @@ function validate_channelname($name) {
 	if (! $name)
 		return t('Empty name');
 
-	if (strlen($name) > 255)
+	if (mb_strlen($name) > 191)
 		return t('Name too long');
 
 	$arr = ['name' => $name];
@@ -271,6 +272,17 @@ function create_identity($arr) {
 	if(! $r) {
 		$ret['message'] = t('Unable to retrieve created identity');
 		return $ret;
+	}
+
+	$a = q("select * from account where account_id = %d",
+		intval($arr['account_id'])
+	);
+
+	$z = [ 'account' => $a[0], 'channel' => $r[0], 'photo_url' => '' ];
+	call_hooks('create_channel_photo',$z);
+ 
+	if($z['photo_url']) {
+		import_channel_photo_from_url($z['photo_url'],$arr['account_id'],$r[0]['channel_id']);
 	}
 
 	if($role_permissions && array_key_exists('limits',$role_permissions))
@@ -1616,13 +1628,15 @@ function get_my_address() {
 function zid_init() {
 	$tmp_str = get_my_address();
 	if(validate_email($tmp_str)) {
-		Zotlabs\Daemon\Master::Summon(array('Gprobe',bin2hex($tmp_str)));
 		$arr = array('zid' => $tmp_str, 'url' => App::$cmd);
 		call_hooks('zid_init',$arr);
 		if(! local_channel()) {
 			$r = q("select * from hubloc where hubloc_addr = '%s' order by hubloc_connected desc limit 1",
 				dbesc($tmp_str)
 			);
+			if(! $r) {
+				Zotlabs\Daemon\Master::Summon(array('Gprobe',bin2hex($tmp_str)));
+			}
 			if($r && remote_channel() && remote_channel() === $r[0]['hubloc_hash'])
 				return;
 			logger('zid_init: not authenticated. Invoking reverse magic-auth for ' . $tmp_str);
@@ -1631,7 +1645,7 @@ function zid_init() {
 			$query = str_replace(array('?zid=','&zid='),array('?rzid=','&rzid='),$query);
 			$dest = '/' . urlencode($query);
 			if($r && ($r[0]['hubloc_url'] != z_root()) && (! strstr($dest,'/magic')) && (! strstr($dest,'/rmagic'))) {
-				goaway($r[0]['hubloc_url'] . '/magic' . '?f=&rev=1&dest=' . z_root() . $dest);
+				goaway($r[0]['hubloc_url'] . '/magic' . '?f=&rev=1&owa=1&dest=' . z_root() . $dest);
 			}
 			else
 				logger('zid_init: no hubloc found.');

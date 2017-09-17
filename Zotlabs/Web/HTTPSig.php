@@ -24,8 +24,9 @@ class HTTPSig {
 
 	static function verify($data,$key = '') {
 
-		$body = $data;
-		$headers = null;
+		$body      = $data;
+		$headers   = null;
+		$spoofable = false;
 
 		$result = [
 			'signer'         => '',
@@ -80,12 +81,23 @@ class HTTPSig {
 			if(array_key_exists($h,$headers)) {
 				$signed_data .= $h . ': ' . $headers[$h] . "\n";
 			}
+			if(strpos($h,'.')) {
+				$spoofable = true;
+			}
 		}
 		$signed_data = rtrim($signed_data,"\n");
 
 		$algorithm = null;
 		if($sig_block['algorithm'] === 'rsa-sha256') {
 			$algorithm = 'sha256';
+		}
+		if($sig_block['algorithm'] === 'rsa-sha512') {
+			$algorithm = 'sha512';
+		}
+
+		if($key && function_exists($key)) {
+			$result['signer'] = $sig_block['keyId'];
+			$key = $key($sig_block['keyId']);
 		}
 
 		if(! $key) {
@@ -94,20 +106,23 @@ class HTTPSig {
 		}
 
 		if(! $key)
-			return null;
+			return $result;
 
 		$x = rsa_verify($signed_data,$sig_block['signature'],$key,$algorithm);
 
 		if($x === false)
 			return $result;
 
-		$result['header_valid'] = true;
+		if(! $spoofable)
+			$result['header_valid'] = true;
 
 		if(in_array('digest',$signed_headers)) {
 			$result['content_signed'] = true;
 			$digest = explode('=', $headers['digest']);
 			if($digest[0] === 'SHA-256')
 				$hashalg = 'sha256';
+			if($digest[0] === 'SHA-512')
+				$hashalg = 'sha512';
 
 			// The explode operation will have stripped the '=' padding, so compare against unpadded base64 
 			if(rtrim(base64_encode(hash($hashalg,$body,true)),'=') === $digest[1]) {
@@ -121,9 +136,16 @@ class HTTPSig {
 
 	function get_activitypub_key($id) {
 
-		$x = q("select xchan_pubkey from xchan where xchan_hash = '%s' and xchan_network = 'activitypub' ",
-			dbesc($id)
-		);
+		if(strpos($id,'acct:') === 0) {
+			$x = q("select xchan_pubkey from xchan left join hubloc on xchan_hash = hubloc_hash where hubloc_addr = '%s' limit 1",
+				dbesc(str_replace('acct:','',$id))
+			);
+		}
+		else {
+			$x = q("select xchan_pubkey from xchan where xchan_hash = '%s' and xchan_network = 'activitypub' ",
+				dbesc($id)
+			);
+		}
 
 		if($x && $x[0]['xchan_pubkey']) {
 			return ($x[0]['xchan_pubkey']);
@@ -145,18 +167,27 @@ class HTTPSig {
 
 
 
-	static function create_sig($request,$head,$prvkey,$keyid = 'Key',$send_headers = false,$alg = 'sha256') {
+	static function create_sig($request,$head,$prvkey,$keyid = 'Key',$send_headers = false,$auth = false,$alg = 'sha256') {
 
 		$return_headers = [];
 
 		if($alg === 'sha256') {
 			$algorithm = 'rsa-sha256';
 		}
+		if($alg === 'sha512') {
+			$algorithm = 'rsa-sha512';
+		}
 
 		$x = self::sign($request,$head,$prvkey,$alg);			
 
-		$sighead = 'Signature: keyId="' . $keyid . '",algorithm="' . $algorithm
+		if($auth) {
+			$sighead = 'Authorization: Signature keyId="' . $keyid . '",algorithm="' . $algorithm
 			. '",headers="' . $x['headers'] . '",signature="' . $x['signature'] . '"';
+		}
+		else {
+			$sighead = 'Signature: keyId="' . $keyid . '",algorithm="' . $algorithm
+			. '",headers="' . $x['headers'] . '",signature="' . $x['signature'] . '"';
+		}
 
 		if($head) {
 			foreach($head as $k => $v) {

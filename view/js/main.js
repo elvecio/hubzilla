@@ -262,6 +262,14 @@ function openClose(theID) {
 	}
 }
 
+function openCloseTR(theID) {
+	if(document.getElementById(theID).style.display == "table-row") {
+		document.getElementById(theID).style.display = "none";
+	} else {
+		document.getElementById(theID).style.display = "table-row";
+	}
+}
+
 function closeOpen(theID) {
 	if(document.getElementById(theID).style.display == "none") {
 		document.getElementById(theID).style.display = "block";
@@ -281,7 +289,7 @@ function closeMenu(theID) {
 function markRead(notifType) {
 	$.get('ping?f=&markRead='+notifType);
 	if(timer) clearTimeout(timer);
-	$('#' + notifType + '-update').html('');
+	$('.' + notifType + '-button').hide();
 	timer = setTimeout(NavUpdate,2000);
 }
 
@@ -446,13 +454,13 @@ function NavUpdate() {
 
 			if(data.network == 0) {
 				data.network = '';
-				$('.net-update, .net-button').hide();
+				$('.network-update, .network-button').hide();
 				document.title = savedTitle;
 			} else {
-				$('.net-update, .net-button').show();
+				$('.network-update, .network-button').show();
 				document.title = '(' + data.network + ') ' + savedTitle;
 			}
-			$('.net-update').html(data.network);
+			$('.network-update').html(data.network);
 			
 			if(data.pubs == 0) {
 				data.pubs = '';
@@ -698,10 +706,12 @@ function updateConvItems(mode,data) {
 
 	// auto-scroll to a particular comment in a thread (designated by mid) when in single-thread mode
 	// use the same method to generate the submid as we use in ThreadItem, 
-	// substr(0,32) + base64_encode + replace(['+','='],['','']);
-	var submid = bParam_mid;
-	var submid_encoded = ((submid.length) ? submid.substring(0,32) : 'abcdefg');
-	submid_encoded = window.btoa(submid_encoded);
+	// base64_encode + replace(['+','='],['','']);
+
+	var submid = ((bParam_mid.length) ? bParam_mid : 'abcdefg');
+	var encoded = ((submid.substr(0,4) == 'b64.') ? true : false);
+	var submid_encoded = ((encoded) ? submid.substr(4) : window.btoa(submid));
+
 	submid_encoded = submid_encoded.replace(/[\+\=]/g,'');
 	if($('.item_' + submid_encoded).length && !$('.item_' + submid_encoded).hasClass('toplevel_item') && mode == 'replace') {
 		if($('.collapsed-comments').length) {
@@ -971,8 +981,6 @@ function notify_popup_loader(notifyType) {
 		if(data.invalid == 1) { 
 			window.location.href=window.location.href;
 		}
-
-		console.log(data);
 
 		if(data.notify.length == 0){
 			$("#nav-" + notifyType + "-menu").html(aStr[nothingnew]);

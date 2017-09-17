@@ -17,20 +17,18 @@ class Display extends \Zotlabs\Web\Controller {
 		if($load)
 			$_SESSION['loadtime'] = datetime_convert();
 	
-	
 		if(observer_prohibited()) {
 			notice( t('Public access denied.') . EOL);
 			return;
 		}
 	
-			
 		if(argc() > 1 && argv(1) !== 'load')
 			$item_hash = argv(1);
 	
 		if($_REQUEST['mid'])
 			$item_hash = $_REQUEST['mid'];
 
-			if(! $item_hash) {
+		if(! $item_hash) {
 			\App::$error = 404;
 			notice( t('Item not found.') . EOL);
 			return;
@@ -38,21 +36,18 @@ class Display extends \Zotlabs\Web\Controller {
 	
 		$observer_is_owner = false;
 		$updateable = false;
-	
 
 		if(local_channel() && (! $update)) {
 	
 			$channel = \App::get_channel();
-	
-	
+
 			$channel_acl = array(
 				'allow_cid' => $channel['channel_allow_cid'], 
 				'allow_gid' => $channel['channel_allow_gid'], 
 				'deny_cid' => $channel['channel_deny_cid'], 
 				'deny_gid' => $channel['channel_deny_gid']
 			); 
-	
-	
+
 			$x = array(
 				'is_owner' => true,
 				'allow_location' => ((intval(get_pconfig($channel['channel_id'],'system','use_browser_location'))) ? '1' : ''),
@@ -94,7 +89,7 @@ class Display extends \Zotlabs\Web\Controller {
 		if($decoded)
 			$item_hash = $decoded;
 
-		$r = q("select id, uid, mid, parent_mid, item_type, item_deleted from item where mid like '%s' limit 1",
+		$r = q("select id, uid, mid, parent_mid, thr_parent, verb, item_type, item_deleted from item where mid like '%s' limit 1",
 			dbesc($item_hash . '%')
 		);
 	
@@ -136,10 +131,16 @@ class Display extends \Zotlabs\Web\Controller {
 			$simple_update .= " and item_thread_top = 0 and author_xchan = '" . protect_sprintf(get_observer_hash()) . "' ";
 	
 		if((! $update) && (! $load)) {
-	
 
 			$static  = ((local_channel()) ? channel_manual_conv_update(local_channel()) : 1);
-	
+
+			//if the target item is not a post (eg a like) we want to address its thread parent
+			$mid = ((($target_item['verb'] == ACTIVITY_LIKE) || ($target_item['verb'] == ACTIVITY_DISLIKE)) ? $target_item['thr_parent'] : $target_item['mid']);
+
+			//if we got a decoded hash we must encode it again before handing to javascript 
+			if($decoded)
+				$mid = 'b64.' . base64url_encode($mid);
+
 			$o .= '<div id="live-display"></div>' . "\r\n";
 			$o .= "<script> var profile_uid = " . ((intval(local_channel())) ? local_channel() : (-1))
 				. "; var netargs = '?f='; var profile_page = " . \App::$pager['page'] . "; </script>\r\n";
@@ -171,7 +172,7 @@ class Display extends \Zotlabs\Web\Controller {
 				'$dend' => '',
 				'$dbegin' => '',
 				'$verb' => '',
-				'$mid' => $item_hash
+				'$mid' => $mid
 			));
 
 			head_add_link([ 
@@ -182,19 +183,20 @@ class Display extends \Zotlabs\Web\Controller {
 			]);
 
 		}
-	
+
 		$observer_hash = get_observer_hash();
 		$item_normal = item_normal();
-	
+		$item_normal_update = item_normal_update();
+
 		$sql_extra = public_permissions_sql($observer_hash);
 
 		if(($update && $load) || ($checkjs->disabled())) {
-	
+
 			$pager_sql = sprintf(" LIMIT %d OFFSET %d ", intval(\App::$pager['itemspage']),intval(\App::$pager['start']));
-	
+
 			if($load || ($checkjs->disabled())) {
 				$r = null;
-	
+
 				require_once('include/channel.php');
 				$sys = get_sys_channel();
 				$sysid = $sys['channel_id'];
@@ -210,16 +212,14 @@ class Display extends \Zotlabs\Web\Controller {
 					);
 					if($r) {
 						$updateable = true;
-	
 					}
-	
 				}
 
 				if($r === null) {
-	
+
 					// in case somebody turned off public access to sys channel content using permissions
 					// make that content unsearchable by ensuring the owner uid can't match
-	
+
 					if(! perm_is_allowed($sysid,$observer_hash,'view_stream'))
 						$sysid = 0;
 
@@ -247,11 +247,10 @@ class Display extends \Zotlabs\Web\Controller {
 			$sysid = $sys['channel_id'];
 
 			if(local_channel()) {
-
 				$r = q("SELECT item.parent AS item_id from item
 					WHERE uid = %d
 					and parent_mid = '%s'
-					$item_normal
+					$item_normal_update
 					$simple_update
 					limit 1",
 					intval(local_channel()),
@@ -275,7 +274,7 @@ class Display extends \Zotlabs\Web\Controller {
 					and uid in ( " . stream_perms_api_uids(($observer_hash) ? (PERMS_NETWORK|PERMS_PUBLIC) : PERMS_PUBLIC) . " ))
 					OR uid = %d )
 					$sql_extra )
-					$item_normal
+					$item_normal_update
 					$simple_update
 					limit 1",
 					dbesc($target_item['parent_mid']),
@@ -290,10 +289,8 @@ class Display extends \Zotlabs\Web\Controller {
 		}
 	
 		if($r) {
-
 			$parents_str = ids_to_querystr($r,'item_id');
 			if($parents_str) {
-	
 				$items = q("SELECT item.*, item.id AS item_id 
 					FROM item
 					WHERE parent in ( %s ) $item_normal ",
@@ -304,7 +301,8 @@ class Display extends \Zotlabs\Web\Controller {
 				$items = fetch_post_tags($items,true);
 				$items = conv_sort($items,'created');
 			}
-		} else {
+		}
+		else {
 			$items = array();
 		}
 	
@@ -326,13 +324,12 @@ class Display extends \Zotlabs\Web\Controller {
 
 		$o .= '<div id="content-complete"></div>';
 
-		
 		if((($update && $load) || $checkjs->disabled()) && (! $items))  {
 			
-			$r = q("SELECT id, item_flags FROM item WHERE id = '%s' OR mid = '%s' LIMIT 1",
-				dbesc($item_hash),
+			$r = q("SELECT id, item_deleted FROM item WHERE mid = '%s' LIMIT 1",
 				dbesc($item_hash)
 			);
+
 			if($r) {
 				if(intval($r[0]['item_deleted'])) {
 					notice( t('Item has been removed.') . EOL );
@@ -350,6 +347,5 @@ class Display extends \Zotlabs\Web\Controller {
 		return $o;
 
 	}
-	
-	
+
 }

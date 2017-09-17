@@ -1,6 +1,7 @@
 <div class="generic-content-wrapper" {{if $hideEditor}}style="display: none;"{{/if}}>
 	<div class="section-title-wrapper">
 		<div class="pull-right">
+			<span class="wiki-typename">[{{$typename}}]&nbsp;</span>
 			{{if $showPageControls}}
 			<div id="page-tools" class="btn-group" style="display: none;">
 				<button type="button" class="btn btn-outline-secondary btn-sm dropdown-toggle" data-toggle="dropdown">
@@ -183,7 +184,8 @@
 			{{else}}
 			content: editor.val(),
 			{{/if}}
-			resource_id: window.wiki_resource_id
+			resource_id: window.wiki_resource_id,
+			mimetype: '{{$mimeType}}'
 		},
 		function (data) {
 		if (data.success) {
@@ -454,7 +456,9 @@
 		window.editor.on("input", function() {
 			$('#save-page').removeClass('disabled');
 		});
+		{{if $mimeType == 'text/bbcode'}}
 		window.editor.bbco_autocomplete('bbcode');
+		{{/if}}
 		{{/if}}
 	});
 
