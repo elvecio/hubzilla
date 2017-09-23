@@ -17,6 +17,7 @@ class ActivityStreams {
 	public $ldsig  = null;
 	public $sigok  = false;
 	public $recips = null;
+	public $raw_recips = null;
 
 	function __construct($string) {
 
@@ -53,20 +54,28 @@ class ActivityStreams {
 		return $this->valid;
 	}
 
-	function collect_recips($base = '',$namespace = 'https://www.w3.org/ns/activitystreams') {
+	function set_recips($arr) {
+		$this->saved_recips = $arr;
+	}
+
+	function collect_recips($base = '',$namespace = '') {
 		$x = [];
 		$fields = [ 'to','cc','bto','bcc','audience'];
 		foreach($fields as $f) {
 			$y = $this->get_compound_property($f,$base,$namespace);
-			if($y)
+			if($y) {
 				$x = array_merge($x,$y);
+				if(! is_array($this->raw_recips))
+					$this->raw_recips = [];
+				$this->raw_recips[$f] = $x;
+			}
 		}						
 // not yet ready for prime time
 //		$x = $this->expand($x,$base,$namespace);
 		return $x;
 	}
 
-	function expand($arr,$base = '',$namespace = 'https://www.w3.org/ns/activitystreams') {
+	function expand($arr,$base = '',$namespace = '') {
 		$ret = [];
 
 		// right now use a hardwired recursion depth of 5
@@ -94,7 +103,11 @@ class ActivityStreams {
 
 	function get_namespace($base,$namespace) {
 
+		if(! $namespace)
+			return '';
+
 		$key = null;
+
 
 		foreach( [ $this->data, $base ] as $b ) {
 			if(! $b)
@@ -126,7 +139,7 @@ class ActivityStreams {
 	}
 
 
-	function get_property_obj($property,$base = '',$namespace = 'https://www.w3.org/ns/activitystreams') {
+	function get_property_obj($property,$base = '',$namespace = '' ) {
 		$prefix = $this->get_namespace($base,$namespace);
 		if($prefix === null)
 			return null;	
@@ -143,13 +156,13 @@ class ActivityStreams {
 		}
 
 		$x = z_fetch_url($url,true,$redirects,
-			['headers' => [ 'Accept: application/activity+json, application/ld+json; profile="https://www.w3.org/ns/activitystreams"']]);
+			['headers' => [ 'Accept: application/ld+json; profile="https://www.w3.org/ns/activitystreams", application/activity+json' ]]);
 		if($x['success'])
 			return json_decode($x['body'],true);
 		return null;
 	}
 
-	function get_compound_property($property,$base = '',$namespace = 'https://www.w3.org/ns/activitystreams') {
+	function get_compound_property($property,$base = '',$namespace = '') {
 		$x = $this->get_property_obj($property,$base,$namespace);
 		if($this->is_url($x)) {
 			$x = $this->fetch_property($x); 	
@@ -164,7 +177,7 @@ class ActivityStreams {
 		return false;
 	}
 
-	function get_primary_type($base = '',$namespace = 'https://www.w3.org/ns/activitystreams') {
+	function get_primary_type($base = '',$namespace = '') {
 		if(! $base)
 			$base = $this->data;
 		$x = $this->get_property_obj('type',$base,$namespace);

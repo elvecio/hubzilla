@@ -20,7 +20,7 @@ class HTTPSig {
 		return $digest;
 	}
 
-	// See draft-cavage-http-signatures-07
+	// See draft-cavage-http-signatures-08
 
 	static function verify($data,$key = '') {
 
@@ -48,7 +48,7 @@ class HTTPSig {
 		else {
 			$headers = [];
 			$headers['(request-target)'] = 
-				$_SERVER['REQUEST_METHOD'] . ' ' .
+				strtolower($_SERVER['REQUEST_METHOD']) . ' ' .
 				$_SERVER['REQUEST_URI'];
 			foreach($_SERVER as $k => $v) {
 				if(strpos($k,'HTTP_') === 0) {
@@ -67,8 +67,12 @@ class HTTPSig {
 			$sig_block = self::parse_sigheader($headers['authorization']);
 		}
 
-		if(! $sig_block)
+		if(! $sig_block) {
+			logger('no signature provided.');
 			return $result;
+		}
+
+		logger('sig_block: ' . print_r($sig_block,true), LOGGER_DATA);
 
 		$result['header_signed'] = true;
 
@@ -110,6 +114,8 @@ class HTTPSig {
 
 		$x = rsa_verify($signed_data,$sig_block['signature'],$key,$algorithm);
 
+		logger('verified: ' . $x, LOGGER_DEBUG);
+
 		if($x === false)
 			return $result;
 
@@ -129,6 +135,8 @@ class HTTPSig {
 				$result['content_valid'] = true;
 			}
 		}
+
+		logger('Content_Valid: ' . $result['content_valid']);
 
 		return $result;
 
