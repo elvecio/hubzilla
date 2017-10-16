@@ -1373,7 +1373,6 @@ function profile_sidebar($profile, $block = 0, $show_connect = true, $zcard = fa
 		? trim(substr($profile['channel_name'],0,strpos($profile['channel_name'],' '))) : $profile['channel_name']);
 	$lastname = (($firstname === $profile['channel_name']) ? '' : trim(substr($profile['channel_name'],strlen($firstname))));
 
-	// @fixme move this to the diaspora plugin itself
 
 	$contact_block = contact_block();
 
@@ -2309,7 +2308,7 @@ function profile_store_lowlevel($arr) {
 // It is the caller's responsibility to confirm the requestor's intent and
 // authorisation to do this.
 
-function account_remove($account_id,$local = true,$unset_session=true) {
+function account_remove($account_id,$local = true,$unset_session = true) {
 
 	logger('account_remove: ' . $account_id);
 
@@ -2354,13 +2353,12 @@ function account_remove($account_id,$local = true,$unset_session=true) {
 
 
 	if ($unset_session) {
-		unset($_SESSION['authenticated']);
-		unset($_SESSION['uid']);
-		notice( sprintf(t("User '%s' deleted"),$account_email) . EOL);
+		App::$session->nuke();
+		notice( sprintf(t('Account \'%s\' deleted'),$account_email) . EOL);
 		goaway(z_root());
 	}
-	return $r;
 
+	return $r;
 }
 
 /**

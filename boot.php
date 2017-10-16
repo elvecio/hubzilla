@@ -49,7 +49,7 @@ require_once('include/hubloc.php');
 require_once('include/attach.php');
 
 define ( 'PLATFORM_NAME',           'hubzilla' );
-define ( 'STD_VERSION',             '2.7.4' );
+define ( 'STD_VERSION',             '2.7.6' );
 define ( 'ZOT_REVISION',            '1.3' );
 
 define ( 'DB_UPDATE_VERSION',       1196  );
@@ -71,8 +71,6 @@ define ( 'DIRECTORY_MODE_NORMAL',      0x0000); // A directory client
 define ( 'DIRECTORY_MODE_PRIMARY',     0x0001); // There can only be *one* primary directory server in a directory_realm.
 define ( 'DIRECTORY_MODE_SECONDARY',   0x0002); // All other mirror directory servers
 define ( 'DIRECTORY_MODE_STANDALONE',  0x0100); // A detached (off the grid) hub with itself as directory server.
-
-define ( 'ZOT6_COMPLIANT',             0x1000);
 
 // We will look for upstream directories whenever me make contact
 // with other sites, but if this is a new installation and isn't
@@ -425,6 +423,7 @@ define ( 'TERM_THING',        7 );
 define ( 'TERM_BOOKMARK',     8 );
 define ( 'TERM_HIERARCHY',    9 );
 define ( 'TERM_COMMUNITYTAG', 10 );
+define ( 'TERM_FORUM',        11 );
 
 define ( 'TERM_OBJ_POST',    1 );
 define ( 'TERM_OBJ_PHOTO',   2 );
@@ -498,6 +497,7 @@ define ( 'ACTIVITY_TAG',         NAMESPACE_ACTIVITY_SCHEMA . 'tag' );
 define ( 'ACTIVITY_SHARE',       NAMESPACE_ACTIVITY_SCHEMA . 'share' );
 define ( 'ACTIVITY_FAVORITE',    NAMESPACE_ACTIVITY_SCHEMA . 'favorite' );
 define ( 'ACTIVITY_CREATE',      NAMESPACE_ACTIVITY_SCHEMA . 'create' );
+define ( 'ACTIVITY_DELETE',      NAMESPACE_ACTIVITY_SCHEMA . 'delete' );
 define ( 'ACTIVITY_WIN',         NAMESPACE_ACTIVITY_SCHEMA . 'win' );
 define ( 'ACTIVITY_LOSE',        NAMESPACE_ACTIVITY_SCHEMA . 'lose' );
 define ( 'ACTIVITY_TIE',         NAMESPACE_ACTIVITY_SCHEMA . 'tie' );
@@ -922,6 +922,9 @@ class App {
 		 *
 		 * There will always be one argument. If provided a naked domain
 		 * URL, self::$argv[0] is set to "home".
+		 * 
+		 * If $argv[0] has a period in it, for example foo.json; rewrite
+		 * to module = 'foo' and set $_REQUEST['module_format'] = 'json';
 		 */
 
 		self::$argv = explode('/', self::$cmd);
@@ -1634,6 +1637,7 @@ function login($register = false, $form_id = 'main-login', $hiddens=false, $logi
 		'$login_page'   => $login_page,
 		'$logout'       => t('Logout'),
 		'$login'        => t('Login'),
+		'$remote_login' => t('Remote Authentication'),
 		'$form_id'      => $form_id,
 		'$lname'        => array('username', t('Login/Email') , '', ''),
 		'$lpassword'    => array('password', t('Password'), '', ''),
@@ -2086,17 +2090,23 @@ function construct_page() {
 
 	$installing = false;
 
+	$uid = ((App::$profile_uid) ? App::$profile_uid : local_channel());
+
+	$navbar = get_config('system','navbar','default');
+	if($uid) {
+		$navbar = get_pconfig($uid,'system','navbar',$navbar);
+	}
+	
+	if($comanche && App::$layout['navbar']) {
+		$navbar = App::$layout['navbar'];
+	}
+
 	if (App::$module == 'setup') {
 		$installing = true;
 	} else {
-		nav($a);
+		nav($navbar);
 	}
 
-	if ($comanche) {
-		if (App::$layout['nav']) {
-			App::$page['nav'] = get_custom_nav(App::$layout['nav']);
-		}
-	}
 
 	$current_theme = Zotlabs\Render\Theme::current();
 

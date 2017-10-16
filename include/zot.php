@@ -124,7 +124,7 @@ function zot_build_packet($channel, $type = 'notify', $recipients = null, $remot
 			'sitekey' => get_config('system','pubkey')
 		],
 		'callback' => '/post',
-		'version' => ZOT_REVISION,
+		'version' => Zotlabs\Lib\System::get_zot_revision(),
 		'encryption' => crypto_methods(),
 		'signing' => signing_methods()
 	];
@@ -311,6 +311,7 @@ function zot_refresh($them, $channel = null, $force = false) {
 	$rhs = '/.well-known/zot-info';
 
 	logger('zot_refresh: ' . $url, LOGGER_DATA, LOG_INFO);
+
 
 	$result = z_post_url($url . $rhs,$postvars);
 
@@ -717,6 +718,16 @@ function import_xchan($arr,$ud_flags = UPDATE_FLAGS_UPDATED, $ud_arr = null) {
 			$deleted_changed = 1;
 		if(intval($r[0]['xchan_pubforum']) != intval($arr['public_forum']))
 			$pubforum_changed = 1;
+
+		if($arr['protocols']) {
+			$protocols = implode(',',$arr['protocols']);
+			if($protocols !== 'zot') {
+				set_xconfig($xchan_hash,'system','protocols',$protocols);
+			}
+			else {
+				del_xconfig($xchan_hash,'system','protocols');
+			}
+		}
 
 		if(($r[0]['xchan_name_date'] != $arr['name_updated'])
 			|| ($r[0]['xchan_connurl'] != $arr['connections_url'])
@@ -1432,7 +1443,7 @@ function public_recips($msg) {
 		if($msg['message']['tags']) {
 			if(is_array($msg['message']['tags']) && $msg['message']['tags']) {
 				foreach($msg['message']['tags'] as $tag) {
-					if(($tag['type'] === 'mention') && (strpos($tag['url'],z_root()) !== false)) {
+					if(($tag['type'] === 'mention' || $tag['type'] === 'forum') && (strpos($tag['url'],z_root()) !== false)) {
 						$address = basename($tag['url']);
 						if($address) {
 							$z = q("select channel_hash as hash from channel where channel_address = '%s'
@@ -2894,8 +2905,9 @@ function import_site($arr, $pubkey) {
 
 	$site_flags = $site_directory;
 
-	if(array_key_exists('zot',$arr) && ((float) $arr['zot']) >= 6.0)
-		$site_flags = ($site_flags & ZOT6_COMPLIANT); 
+	if(array_key_exists('zot',$arr)) {
+		set_sconfig($arr['url'],'system','zot_version',$arr['zot']);
+	} 
 
 	if($exists) {
 		if(($siterecord['site_flags'] != $site_flags)
@@ -4034,6 +4046,11 @@ function zotinfo($arr) {
 
 	$id = $e['channel_id'];
 
+	$x = [ 'channel_id' => $id, 'protocols' => ['zot'] ];
+	call_hooks('channel_protocols',$x);
+	$protocols = $x['protocols'];
+
+
 	$sys_channel     = (intval($e['channel_system'])   ? true : false);
 	$special_channel = (($e['channel_pageflags'] & PAGE_PREMIUM)  ? true : false);
 	$adult_channel   = (($e['channel_pageflags'] & PAGE_ADULT)    ? true : false);
@@ -4134,6 +4151,7 @@ function zotinfo($arr) {
 	$ret['target']         = $ztarget;
 	$ret['target_sig']     = $zsig;
 	$ret['searchable']     = $searchable;
+	$ret['protocols']      = $protocols;
 	$ret['adult_content']  = $adult_channel;
 	$ret['public_forum']   = $public_forum;
 	if($deleted)
@@ -4183,7 +4201,7 @@ function zotinfo($arr) {
 	if($x)
 		$ret['locations'] = $x;
 
-	$ret['site'] = zot_site_info($e);
+	$ret['site'] = zot_site_info();
 
 
 	check_zotinfo($e,$x,$ret);
@@ -4195,10 +4213,10 @@ function zotinfo($arr) {
 }
 
 
-function zot_site_info($channel = null) {
+function zot_site_info() {
 
-	$signing_key = (($channel) ? $channel['channel_prvkey'] : get_config('system','prvkey'));
-	$sig_method = get_config('system','signature_algorithm','sha256');
+	$signing_key = get_config('system','prvkey');
+	$sig_method  = get_config('system','signature_algorithm','sha256');
 
 	$ret = [];
 	$ret['site'] = [];
@@ -4225,12 +4243,7 @@ function zot_site_info($channel = null) {
 
 	$ret['site']['encryption'] = crypto_methods();
 	$ret['site']['signing'] = signing_methods();
-	if(function_exists('zotvi_load')) {
-		$ret['site']['zot'] = '6.0';
-	}
-	else {
-		$ret['site']['zot'] = ZOT_REVISION;
-	}
+	$ret['site']['zot'] = Zotlabs\Lib\System::get_zot_revision();
 
 	// hide detailed site information if you're off the grid
 

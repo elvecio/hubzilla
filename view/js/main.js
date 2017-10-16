@@ -365,11 +365,6 @@ $(function() {
 		return;
 	});
 
-	$('span[rel^="#"]').click(function(e){
-		manage_popup_menu(this, e);
-		return;
-	});
-
 	function manage_popup_menu(w,e) {
 		menu = $( $(w).attr('rel') );
 
@@ -414,7 +409,7 @@ $(function() {
 
 function NavUpdate() {
 	if(liking)
-		$('.like-rotator').spin(false);
+		$('.like-rotator').hide();
 
 	if((! stopped) && (! mediaPlaying)) {
 		var pingCmd = 'ping' + ((localUser != 0) ? '?f=&uid=' + localUser : '');
@@ -444,11 +439,11 @@ function NavUpdate() {
 
 			updateCountsOnly = false;
 
-			if(data.network || data.home || data.intros || data.mail || data.all_events || data.notify || data.files || data.pubs) {
-				$('#notifications-btn').css('opacity', 1);
+			if(data.network || data.home || data.intros || data.register || data.mail || data.all_events || data.notify || data.files || data.pubs) {
+				$('#notifications-btn, #notifications-btn-1').css('opacity', 1);
 			}
 			else {
-				$('#notifications-btn').css('opacity', 0.5);
+				$('#notifications-btn, #notifications-btn-1').css('opacity', 0.5);
 				$('#navbar-collapse-1').removeClass('show');
 			}
 
@@ -481,8 +476,8 @@ function NavUpdate() {
 			if(data.home == 0) { data.home = ''; $('.home-update, .home-button').hide(); } else { $('.home-update, .home-button').show(); }
 			$('.home-update').html(data.home);
 
-			if(data.intros == 0) { data.intros = ''; $('.intro-update, .intro-button').hide(); } else { $('.intro-update, .intro-button').show(); }
-			$('.intro-update').html(data.intros);
+			if(data.intros == 0) { data.intros = ''; $('.intros-update, .intros-button').hide(); } else { $('.intros-update, .intros-button').show(); }
+			$('.intros-update').html(data.intros);
 
 			if(data.mail == 0) { data.mail = ''; $('.mail-update, .mail-button').hide(); } else { $('.mail-update, .mail-button').show(); }
 			$('.mail-update').html(data.mail);
@@ -490,7 +485,7 @@ function NavUpdate() {
 			if(data.notify == 0) { data.notify = ''; $('.notify-update, .notify-button').hide(); } else { $('.notify-update, .notify-button').show(); }
 			$('.notify-update').html(data.notify);
 
-			if(data.register == 0) { data.register = ''; $('.register-update').removeClass('show'); } else { $('.register-update').addClass('show'); }
+			if(data.register == 0) { data.register = ''; $('.register-update, .register-button').hide(); } else { $('.register-update, .register-button').show(); }
 			$('.register-update').html(data.register);
 
 			if(data.events == 0) { data.events = ''; $('.events-update, .events-button').hide(); } else { $('.events-update, .events-button').show(); }
@@ -657,7 +652,7 @@ function updateConvItems(mode,data) {
 
 	// reset rotators and cursors we may have set before reaching this place
 
-	$('.like-rotator').spin(false);
+	$('.like-rotator').hide();
 
 	if(commentBusy) {
 		commentBusy = false;
@@ -781,7 +776,7 @@ function collapseHeight() {
 
 function liveUpdate() {
 	if(typeof profile_uid === 'undefined') profile_uid = false; /* Should probably be unified with channelId defined in head.tpl */
-	if((src === null) || (stopped) || (! profile_uid)) { $('.like-rotator').spin(false); return; }
+	if((src === null) || (stopped) || (! profile_uid)) { $('.like-rotator').hide(); return; }
 	if(($('.comment-edit-text.expanded').length) || (in_progress)) {
 		if(livetime) {
 			clearTimeout(livetime);
@@ -810,7 +805,7 @@ function liveUpdate() {
 	update_url = buildCmd();
 
 	if(page_load) {
-		$("#page-spinner").spin('small');
+		$("#page-spinner").show();
 		if(bParam_page == 1)
 			update_mode = 'replace';
 		else
@@ -859,8 +854,8 @@ function liveUpdate() {
 				page_load = false;
 				scroll_next = false;
 				updateConvItems(update_mode,data);
-				$("#page-spinner").spin(false);
-				$("#profile-jot-text-loading").spin(false);
+				$("#page-spinner").hide();
+				$("#profile-jot-text-loading").hide();
 
 				// adjust scroll position if new content was added above viewport
 				if(update_mode === 'update') {
@@ -889,8 +884,8 @@ function liveUpdate() {
 			page_load = false;
 			scroll_next = false;
 			updateConvItems(update_mode,data);
-			$("#page-spinner").spin(false);
-			$("#profile-jot-text-loading").spin(false);
+			$("#page-spinner").hide();
+			$("#profile-jot-text-loading").hide();
 
 			in_progress = false;
 
@@ -930,14 +925,14 @@ function pageUpdate() {
 
 	update_url = baseurl + '/' + page_query + '/?f=&aj=1&page=' + bParam_page + extra_args ;
 
-	$("#page-spinner").spin('small');
+	$("#page-spinner").show();
 	update_mode = 'append';
 
 	$.get(update_url,function(data) {
 		page_load = false;
 		scroll_next = false;
 		updatePageItems(update_mode,data);
-		$("#page-spinner").spin(false);
+		$("#page-spinner").hide();
 		$(".autotime").timeago();
 		in_progress = false;
 	});
@@ -945,6 +940,7 @@ function pageUpdate() {
 
 function justifyPhotos(id) {
 	justifiedGalleryActive = true;
+	$('#' + id).show();
 	$('#' + id).justifiedGallery({
 		selector: 'a, div:not(.spinner, #page-end)',
 		margins: 3,
@@ -967,7 +963,8 @@ function justifyPhotosAjax(id) {
 
 function notify_popup_loader(notifyType) {
 
-	/* notifications template */
+	/* notifications template - different for navbar and notifications widget */
+	var navbar_notifications_tpl= unescape($("#navbar-notifications-template[rel=template]").html());
 	var notifications_tpl= unescape($("#nav-notifications-template[rel=template]").html());
 	var notifications_all = unescape($('<div>').append( $("#nav-" + notifyType + "-see-all").clone() ).html()); //outerHtml hack
 	var notifications_mark = unescape($('<div>').append( $("#nav-" + notifyType + "-mark-all").clone() ).html()); //outerHtml hack
@@ -983,15 +980,20 @@ function notify_popup_loader(notifyType) {
 		}
 
 		if(data.notify.length == 0){
+			$("#navbar-" + notifyType + "-menu").html(aStr[nothingnew]);
 			$("#nav-" + notifyType + "-menu").html(aStr[nothingnew]);
 		} else {
+			$("#navbar-" + notifyType + "-menu").html(notifications_all + notifications_mark);
 			$("#nav-" + notifyType + "-menu").html(notifications_all + notifications_mark);
 
 			$(data.notify).each(function() {
+				html = navbar_notifications_tpl.format(this.notify_link,this.photo,this.name,this.message,this.when,this.hclass);
+				$("#navbar-" + notifyType + "-menu").append(html);
+
 				html = notifications_tpl.format(this.notify_link,this.photo,this.name,this.message,this.when,this.hclass);
 				$("#nav-" + notifyType + "-menu").append(html);
 			});
-			$(".dropdown-menu img[data-src]").each(function(i, el){
+			$(".dropdown-menu img[data-src], .notification img[data-src]").each(function(i, el){
 				// Replace data-src attribute with src attribute for every image
 				$(el).attr('src', $(el).data("src"));
 				$(el).removeAttr("data-src");
@@ -1014,7 +1016,7 @@ function notify_popup_loader(notifyType) {
 
 function dolike(ident, verb) {
 	unpause();
-	$('#like-rotator-' + ident.toString()).spin('tiny');
+	$('#like-rotator-' + ident.toString()).show();
 	$.get('like/' + ident.toString() + '?verb=' + verb, NavUpdate );
 	liking = 1;
 }
@@ -1044,7 +1046,7 @@ function dropItem(url, object) {
 
 function dosubthread(ident) {
 	unpause();
-	$('#like-rotator-' + ident.toString()).spin('tiny');
+	$('#like-rotator-' + ident.toString()).show();
 	$.get('subthread/sub/' + ident.toString(), NavUpdate );
 	liking = 1;
 }
@@ -1052,7 +1054,7 @@ function dosubthread(ident) {
 
 function dounsubthread(ident) {
 	unpause();
-	$('#like-rotator-' + ident.toString()).spin('tiny');
+	$('#like-rotator-' + ident.toString()).show();
 	$.get('subthread/unsub/' + ident.toString(), NavUpdate );
 	liking = 1;
 }
@@ -1061,7 +1063,7 @@ function dounsubthread(ident) {
 
 function dostar(ident) {
 	ident = ident.toString();
-	$('#like-rotator-' + ident).spin('tiny');
+	$('#like-rotator-' + ident).show();
 	$.get('starred/' + ident, function(data) {
 		if(data.result == 1) {
 			$('#starred-' + ident).addClass('starred');
@@ -1079,7 +1081,7 @@ function dostar(ident) {
 			$('#star-' + ident).removeClass('hidden');
 			$('#unstar-' + ident).addClass('hidden');
 		}
-		$('#like-rotator-' + ident).spin(false);
+		$('#like-rotator-' + ident).hide();
 	});
 }
 
@@ -1113,11 +1115,11 @@ function lockview(type, id) {
 function filestorage(event, nick, id) {
 	$('#cloud-index-' + last_filestorage_id).removeClass('cloud-index-active');
 	$('#perms-panel-' + last_filestorage_id).hide().html('');
-	$('#file-edit-' + id).spin('tiny');
+	$('#file-edit-' + id).show();
 	$.get('filestorage/' + nick + '/' + id + '/edit', function(data) {
 		$('#cloud-index-' + id).addClass('cloud-index-active');
 		$('#perms-panel-' + id).html(data).show();
-		$('#file-edit-' + id).spin(false);
+		$('#file-edit-' + id).hide();
 		last_filestorage_id = id;
 	});
 }
