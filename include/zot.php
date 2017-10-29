@@ -361,8 +361,6 @@ function zot_refresh($them, $channel = null, $force = false) {
 			else
 				$permissions = $j['permissions'];
 
-			$connected_set = false;
-
 			if($permissions && is_array($permissions)) {
 				$old_read_stream_perm = get_abconfig($channel['channel_id'],$x['hash'],'their_perms','view_stream');
 
@@ -4177,7 +4175,7 @@ function zotinfo($arr) {
 
 	if($ztarget_hash) {
 		$permissions['connected'] = false;
-		$b = q("select * from abook where abook_xchan = '%s' and abook_channel = %d limit 1",
+		$b = q("select * from abook where abook_xchan = '%s' and abook_channel = %d and abook_pending = 0 limit 1",
 			dbesc($ztarget_hash),
 			intval($e['channel_id'])
 		);
@@ -4201,8 +4199,7 @@ function zotinfo($arr) {
 	if($x)
 		$ret['locations'] = $x;
 
-	$ret['site'] = zot_site_info();
-
+	$ret['site'] = zot_site_info($e['channel_prvkey']);
 
 	check_zotinfo($e,$x,$ret);
 
@@ -4213,7 +4210,7 @@ function zotinfo($arr) {
 }
 
 
-function zot_site_info() {
+function zot_site_info($channel_key = '') {
 
 	$signing_key = get_config('system','prvkey');
 	$sig_method  = get_config('system','signature_algorithm','sha256');
@@ -4221,7 +4218,10 @@ function zot_site_info() {
 	$ret = [];
 	$ret['site'] = [];
 	$ret['site']['url'] = z_root();
-	$ret['site']['url_sig'] = base64url_encode(rsa_sign(z_root(),$signing_key,$sig_method));
+	if($channel_key) {
+		$ret['site']['url_sig'] = base64url_encode(rsa_sign(z_root(),$channel_key,$sig_method));
+	}
+	$ret['site']['url_site_sig'] = base64url_encode(rsa_sign(z_root(),$signing_key,$sig_method));
 	$ret['site']['post'] = z_root() . '/post';
 	$ret['site']['openWebAuth']  = z_root() . '/owa';
 	$ret['site']['authRedirect'] = z_root() . '/magic';
