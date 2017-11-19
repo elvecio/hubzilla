@@ -53,7 +53,7 @@ define ( 'PLATFORM_NAME',           'hubzilla' );
 define ( 'STD_VERSION',             '2.9' );
 define ( 'ZOT_REVISION',            '1.3' );
 
-define ( 'DB_UPDATE_VERSION',       1197  );
+define ( 'DB_UPDATE_VERSION',       1198  );
 
 define ( 'PROJECT_BASE',   __DIR__ );
 
@@ -925,6 +925,7 @@ class App {
 		 */
 
 		self::$argv = explode('/', self::$cmd);
+
 		self::$argc = count(self::$argv);
 		if ((array_key_exists('0', self::$argv)) && strlen(self::$argv[0])) {
 			if(strpos(self::$argv[0],'.')) {

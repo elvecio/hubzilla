@@ -31,7 +31,6 @@ function z_mime_content_type($filename) {
 	'txt'  => 'text/plain',
 	'htm'  => 'text/html',
 	'html' => 'text/html',
-	'php'  => 'text/html',
 	'css'  => 'text/css',
 	'md'   => 'text/markdown',
 	'bb'   => 'text/bbcode',
@@ -41,8 +40,17 @@ function z_mime_content_type($filename) {
 	'swf'  => 'application/x-shockwave-flash',
 	'flv'  => 'video/x-flv',
 	'epub' => 'application/epub+zip',
+	'c'    => 'text/plain',
+	'h'    => 'text/plain',
+	'sh'   => 'text/plain',
+	'py'   => 'text/plain',
+	'php'  => 'text/plain',
+	'rb'   => 'text/plain',
+	'pdl'  => 'text/plain',
+
 
 	// images
+
 	'png'  => 'image/png',
 	'jpe'  => 'image/jpeg',
 	'jpeg' => 'image/jpeg',
@@ -73,9 +81,7 @@ function z_mime_content_type($filename) {
 	'flac' => 'audio/flac',
 	'opus' => 'audio/ogg',
 	'webm' => 'video/webm',
-//	'webm' => 'audio/webm',
 	'mp4'  => 'video/mp4',
-//	'mp4'  => 'audio/mp4',
 	'mkv'  => 'video/x-matroska',
 
 	// adobe
@@ -588,6 +594,12 @@ function attach_store($channel, $observer_hash, $options = '', $arr = null) {
 			$def_extension =  '.png';
 	}
 
+	// If we know it's a photo, over-ride the type in case the source system could not determine what it was
+
+	if($is_photo) {
+		$type = $gis['mime'];
+	}
+
 	$pathname = '';
 
 	if($is_photo) {
@@ -947,9 +959,9 @@ function attach_store($channel, $observer_hash, $options = '', $arr = null) {
 	}
 
 	if($notify) {
-		//$cloudPath =  z_root() . '/cloud/' . $channel['channel_address'] . '/' . $r['0']['display_path'];
-		//$object = get_file_activity_object($channel['channel_id'], $r['0']['hash'], $cloudPath);
-		//file_activity($channel['channel_id'], $object, $r['0']['allow_cid'], $r['0']['allow_gid'], $r['0']['deny_cid'], $r['0']['deny_gid'], 'post', $notify);
+		$cloudPath =  z_root() . '/cloud/' . $channel['channel_address'] . '/' . $r['0']['display_path'];
+		$object = get_file_activity_object($channel['channel_id'], $r['0']['hash'], $cloudPath);
+		file_activity($channel['channel_id'], $object, $r['0']['allow_cid'], $r['0']['allow_gid'], $r['0']['deny_cid'], $r['0']['deny_gid'], 'post', $notify);
 	}
 
 	return $ret;
@@ -1366,7 +1378,7 @@ function attach_delete($channel_id, $resource, $is_photo = 0) {
 		return;
 	}
 
-	$url = get_cloudpath($channel_id, $channel_address, $resource);
+	$url = get_cloud_url($channel_id, $channel_address, $resource);
 	$object = get_file_activity_object($channel_id, $resource, $url);
 
 	// If resource is a directory delete everything in the directory recursive
@@ -1421,7 +1433,7 @@ function attach_delete($channel_id, $resource, $is_photo = 0) {
 		intval($channel_id)
 	);
 
-	file_activity($channel_id, $object, $object['allow_cid'], $object['allow_gid'], $object['deny_cid'], $object['deny_gid'], 'update', $notify=1);
+	file_activity($channel_id, $object, $object['allow_cid'], $object['allow_gid'], $object['deny_cid'], $object['deny_gid'], 'update', true);
 
 	return;
 }
@@ -2341,6 +2353,11 @@ function attach_move($channel_id, $resource_id, $new_folder_hash) {
 }
 
 
+/**
+ * Used to generate a select input box of all your folders 
+ */
+
+
 function attach_folder_select_list($channel_id) {
 
 	$r = q("select * from attach where is_dir = 1 and uid = %d",
@@ -2391,6 +2408,10 @@ function attach_folder_rpaths($all_folders,$that_folder) {
 	return (($error) ? false : [ $current_hash , $path ]);
 }
 
+/**
+ * @brief Given a channel_id and attach_hash,  return an array with the full relative path and os_path
+ */
+
 
 function attach_syspaths($channel_id,$attach_hash) {
 
@@ -2413,6 +2434,17 @@ function attach_syspaths($channel_id,$attach_hash) {
 
 	return [ 'os_path' => $os_path, 'path' => $path ];
 }
+
+/**
+ * in earlier releases we did not fill in os_path and display_path in the attach DB structure.
+ * (It was not needed or used). Going forward we intend to make use of these fields. 
+ * A cron task checks for empty values (as older attachments may have arrived at our site
+ * in a clone operation) and executes attach_syspaths() to generate these field values and correct 
+ * the attach table entry. The operation is limited to 100 DB entries at a time so as not to 
+ * overload the system in any cron run. Eventually it will catch up with old attach structures
+ * and switch into maintenance mode to correct any that might arrive in clone packets from older
+ * sites.
+ */
 
 
 
@@ -2438,6 +2470,12 @@ function attach_upgrade() {
 		}
 	}
 }
+
+
+/**
+ * Chunked uploader for integration with the blueimp jquery-uploader
+ * This is currently used.
+ */
 
 
 function save_chunk($channel,$start,$end,$len) {
@@ -2477,65 +2515,4 @@ function save_chunk($channel,$start,$end,$len) {
 	return $result;
 }
 
-
-/**
- * @brief Submit handler for chunked uploads.
- *
- * @param array $channel
- * @param array $arr
- * @return array
- */
-function chunkloader($channel, $arr) {
-
-	logger('request: ' . print_r($arr,true), LOGGER_DEBUG);
-	logger('files: ' . print_r($_FILES,true), LOGGER_DEBUG);
-
-	$result = [];
-
-	$tmp_path = $_FILES['file']['tmp_name'];
-	$new_base = 'store/[data]/' . $channel['channel_address'] . '/tmp';
-	os_mkdir($new_base,STORAGE_DEFAULT_PERMISSIONS,true);
-
-	$new_path = $new_base . '/' . $arr['resumableFilename'];
-
-	rename($tmp_path,$new_path . '.' . intval($arr['resumableChunkNumber']));
-
-	$missing_parts = false;
-	for($x = 1; $x <= intval($arr['resumableTotalChunks']); $x ++) {
-		if(! file_exists($new_path . '.' . $x)) {
-			$missing_parts = true;
-			break;
-		}
-	}
-
-	if($missing_parts) {
-		$result['partial'] = true;
-		return $result;
-	}
-
-	if(intval($arr['resumableTotalChunks']) === 1) {
-		rename($new_path . '.' . '1', $new_path);
-	}
-	else {
-		for($x = 1; $x <= intval($arr['resumableTotalChunks']); $x ++) {
-			$istream = fopen($new_path . '.' . $x,'rb');
-			$ostream = fopen($new_path,'ab');
-			if($istream && $ostream) {
-				pipe_streams($istream,$ostream);
-				fclose($istream);
-				fclose($ostream);
-			}
-			unlink($new_path . '.' . $x);
-		}
-	}
-
-	$result['name'] = $arr['resumableFilename'];
-	$result['type'] = $arr['resumableType'];
-	$result['tmp_name'] = $new_path;
-	$result['error'] = 0;
-	$result['size'] = $arr['resumableTotalSize'];
-	$result['complete'] = true;
-
-	return $result;
-}
 

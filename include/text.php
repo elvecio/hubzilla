@@ -819,7 +819,7 @@ function get_tags($s) {
 	// added ; to single word tags to allow emojis and other unicode character constructs in bbcode
 	// (this would actually be &#xnnnnn; but the ampersand will have been escaped to &amp; by the time we see it.)
 
-	if(preg_match_all('/(?<![a-zA-Z0-9=\/\?])(@[^ \x0D\x0A,:?\[]+ [^ \x0D\x0A@,:?\[]+)/',$s,$match)) {
+	if(preg_match_all('/(?<![a-zA-Z0-9=\pL\/\?])(@[^ \x0D\x0A,:?\[]+ [^ \x0D\x0A@,:?\[]+)/u',$s,$match)) {
 		foreach($match[1] as $mtch) {
 			if(substr($mtch,-1,1) === '.')
 				$ret[] = substr($mtch,0,-1);
@@ -831,7 +831,7 @@ function get_tags($s) {
 	// Otherwise pull out single word tags. These can be @nickname, @first_last
 	// and #hash tags.
 
-	if(preg_match_all('/(?<![a-zA-Z0-9=\/\?\;])([@#\!][^ \x0D\x0A,;:?\[]+)/',$s,$match)) {
+	if(preg_match_all('/(?<![a-zA-Z0-9=\pL\/\?\;])([@#\!][^ \x0D\x0A,;:?\[]+)/u',$s,$match)) {
 		foreach($match[1] as $mtch) {
 			if(substr($mtch,-1,1) === '.')
 				$mtch = substr($mtch,0,-1);
@@ -1052,7 +1052,7 @@ function searchbox($s,$id='search-box',$url='/search',$save = false) {
  * @return string
  */
 function linkify($s, $me = false) {
-	$s = preg_replace("/(https?\:\/\/[a-zA-Z0-9\:\/\-\?\&\;\.\=\_\@\~\#\'\%\$\!\+\,\@]*)/", (($me) ? ' <a href="$1" rel="me" >$1</a>' : ' <a href="$1" >$1</a>'), $s);
+	$s = preg_replace("/(https?\:\/\/[a-zA-Z0-9\pL\:\/\-\?\&\;\.\=\_\@\~\#\'\%\$\!\+\,\@]*)/u", (($me) ? ' <a href="$1" rel="me" >$1</a>' : ' <a href="$1" >$1</a>'), $s);
 	$s = preg_replace("/\<(.*?)(src|href)=(.*?)\&amp\;(.*?)\>/ism",'<$1$2=$3&$4>',$s);
 
 	return($s);
@@ -2710,6 +2710,9 @@ function getIconFromType($type) {
 		'application/octet-stream' => 'fa-file-o',
 		//Text
 		'text/plain' => 'fa-file-text-o',
+		'text/markdown' => 'fa-file-text-o',
+		'text/bbcode' => 'fa-file-text-o',
+		'text/html' => 'fa-file-text-o',
 		'application/msword' => 'fa-file-word-o',
 		'application/pdf' => 'fa-file-pdf-o',
 		'application/vnd.oasis.opendocument.text' => 'fa-file-word-o',
@@ -2739,11 +2742,33 @@ function getIconFromType($type) {
 		'video/x-matroska' => 'fa-file-video-o'
 	);
 
-	$iconFromType = 'fa-file-o';
+	$catMap = [ 
+		'application' => 'fa-file-code-o',
+		'multipart'   => 'fa-folder',
+		'audio'       => 'fa-file-audio-o',
+		'video'       => 'fa-file-video-o',
+		'text'        => 'fa-file-text-o',
+		'image'       => 'fa=file-picture-o',
+		'message'     => 'fa-file-text-o'
+	]; 
+
+
+	$iconFromType = '';
 
 	if (array_key_exists($type, $iconMap)) {
 		$iconFromType = $iconMap[$type];
 	}
+	else {
+		$parts = explode('/',$type);
+		if($parts[0] && $catMap[$parts[0]]) { 
+			$iconFromType = $catMap[$parts[0]];
+		}
+	}
+
+	if(! $iconFromType)	{
+		$iconFromType = 'fa-file-o';
+	}
+
 
 	return $iconFromType;
 }
@@ -3099,10 +3124,10 @@ function cleanup_bbcode($body) {
 	$body = preg_replace_callback('/\[zrl(.*?)\[\/(zrl)\]/ism','\red_escape_codeblock',$body);
 
 
-	$body = preg_replace_callback("/([^\]\='".'"'."\/]|^|\#\^)(https?\:\/\/[a-zA-Z0-9\:\/\-\?\&\;\.\=\@\_\~\#\%\$\!\\
-+\,\(\)]+)/ism", '\nakedoembed', $body);
-	$body = preg_replace_callback("/([^\]\='".'"'."\/]|^|\#\^)(https?\:\/\/[a-zA-Z0-9\:\/\-\?\&\;\.\=\@\_\~\#\%\$\!\\
-+\,\(\)]+)/ism", '\red_zrl_callback', $body);
+	$body = preg_replace_callback("/([^\]\='".'"'."\/]|^|\#\^)(https?\:\/\/[a-zA-Z0-9\pL\:\/\-\?\&\;\.\=\@\_\~\#\%\$\!\\
++\,\(\)]+)/ismu", '\nakedoembed', $body);
+	$body = preg_replace_callback("/([^\]\='".'"'."\/]|^|\#\^)(https?\:\/\/[a-zA-Z0-9\pL\:\/\-\?\&\;\.\=\@\_\~\#\%\$\!\\
++\,\(\)]+)/ismu", '\red_zrl_callback', $body);
 
 	$body = preg_replace_callback('/\[\$b64zrl(.*?)\[\/(zrl)\]/ism','\red_unescape_codeblock',$body);
 	$body = preg_replace_callback('/\[\$b64url(.*?)\[\/(url)\]/ism','\red_unescape_codeblock',$body);

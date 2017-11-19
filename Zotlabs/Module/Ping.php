@@ -219,7 +219,7 @@ class Ping extends \Zotlabs\Web\Controller {
 						intval(local_channel())
 					);
 					break;
-				case 'messages':
+				case 'mail':
 					$r = q("update mail set mail_seen = 1 where mail_seen = 0 and channel_id = %d ",
 						intval(local_channel())
 					);
@@ -262,6 +262,11 @@ class Ping extends \Zotlabs\Web\Controller {
 
 			if($t) {
 				foreach($t as $tt) {
+					$message = trim(strip_tags(bbcode($tt['msg'])));
+
+					if(strpos($message, $tt['xname']) === 0)
+						$message = substr($message, strlen($tt['xname']) + 1);
+
 					$notifs[] = array(
 						'notify_link' => z_root() . '/notify/view/' . $tt['id'],
 						'name' => $tt['xname'],
@@ -269,7 +274,9 @@ class Ping extends \Zotlabs\Web\Controller {
 						'photo' => $tt['photo'],
 						'when' => relative_date($tt['created']),
 						'hclass' => (($tt['seen']) ? 'notify-seen' : 'notify-unseen'),
-						'message' => strip_tags(bbcode($tt['msg']))
+						'b64mid' => 'b64.' . base64url_encode(basename($tt['link'])),
+						'notify_id' => $tt['id'],
+						'message' => $message
 					);
 				}
 			}

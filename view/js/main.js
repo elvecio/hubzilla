@@ -32,7 +32,12 @@ function handle_comment_form(e) {
 	var fields_empty = true;
 
 	if(form.find('.comment-edit-text').length) {
-		form.find('.comment-edit-text').addClass('expanded').removeAttr('placeholder');
+		var commentElm = form.find('.comment-edit-text').attr('id');
+		var submitElm = commentElm.replace(/text/,'submit');
+
+		$('#' + commentElm).addClass('expanded').removeAttr('placeholder');
+		$('#' + commentElm).attr('tabindex','9');
+		$('#' + submitElm).attr('tabindex','10');
 		form.find(':not(:visible)').show();
 	}
 
@@ -43,7 +48,12 @@ function handle_comment_form(e) {
 				fields_empty = false;
 		});
 		if(fields_empty) {
-			form.find('.comment-edit-text').removeClass('expanded').attr('placeholder', aStr.comment);
+			var emptyCommentElm = form.find('.comment-edit-text').attr('id');
+        	var emptySubmitElm = commentElm.replace(/text/,'submit');
+
+			$('#' + emptyCommentElm).removeClass('expanded').attr('placeholder', aStr.comment);
+			$('#' + emptyCommentElm).removeAttr('tabindex');
+			$('#' + emptySubmitElm).removeAttr('tabindex');
 			form.find(':not(.comment-edit-text)').hide();
 		}
 	});
@@ -740,6 +750,7 @@ function collapseHeight() {
 }
 
 function liveUpdate() {
+
 	if(typeof profile_uid === 'undefined') profile_uid = false; /* Should probably be unified with channelId defined in head.tpl */
 	if((src === null) || (stopped) || (! profile_uid)) { $('.like-rotator').hide(); return; }
 	if(($('.comment-edit-text.expanded').length) || (in_progress)) {
@@ -780,7 +791,6 @@ function liveUpdate() {
 		update_mode = 'update';
 		var orgHeight = $("#region_2").height();
 	}
-
 
 	var dstart = new Date();
 	console.log('LOADING data...');
@@ -949,9 +959,9 @@ function notify_popup_loader(notifyType) {
 		$("." + notifyType + "-update").html(data.notify.length);
 
 		$(data.notify).each(function() {
-			html = navbar_notifications_tpl.format(this.notify_link,this.photo,this.name,this.message,this.when,this.hclass);
+			html = navbar_notifications_tpl.format(this.notify_link,this.photo,this.name,this.message,this.when,this.hclass,this.b64mid,this.notify_id);
 			$("#navbar-" + notifyType + "-menu").append(html);
-			html = notifications_tpl.format(this.notify_link,this.photo,this.name,this.message,this.when,this.hclass);
+			html = notifications_tpl.format(this.notify_link,this.photo,this.name,this.message,this.when,this.hclass,this.b64mid,this.notify_id);
 			$("#nav-" + notifyType + "-menu").append(html);
 		});
 
