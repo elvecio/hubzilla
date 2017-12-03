@@ -1,8 +1,9 @@
 <script>
 	var notifications_parent;
+
 	$(document).ready(function() {
 		notifications_parent = $('#notifications_wrapper')[0].parentElement.id;
-		$('#notifications-btn').click(function() {
+		$('.notifications-btn').click(function() {
 			if($('#notifications_wrapper').hasClass('fs'))
 				$('#notifications_wrapper').prependTo('#' + notifications_parent);
 			else
@@ -13,6 +14,11 @@
 				$('#navbar-collapse-2').removeClass('show');
 			}
 		});
+
+		window.onpopstate = function(e) {
+			if(e.state !== null)
+				getData(e.state.b64mid, '');
+		};
 	});
 
 	{{if $module == 'display' || $module == 'hq'}}
@@ -20,36 +26,55 @@
 		var b64mid = $(this).data('b64mid');
 		var notify_id = $(this).data('notify_id');
 		var path = $(this)[0].pathname.substr(1,7);
+		var stateObj = { b64mid: b64mid };
 
-		console.log(path);
+		{{if $module == 'display'}}
+		history.pushState(stateObj, '', 'display/' + b64mid);
+		{{/if}}
+		{{if $module == 'hq'}}
+		history.pushState(stateObj, '', 'hq/' + b64mid);
+		{{/if}}
 
 		{{if $module == 'hq'}}
-		if(b64mid !== 'undefined' && path !== 'pubstre') {
+		if(b64mid !== 'undefined') {
 		{{else}}
 		if(path === 'display' && b64mid) {
 		{{/if}}
 			e.preventDefault();
-			e.stopPropagation();
 
-			$('.thread-wrapper').remove();
-
-			if(! page_load)
+			if(! page_load) {
 				$(this).fadeOut();
-
-			bParam_mid = b64mid;
-			mode = 'replace';
-			page_load = true;
-			{{if $module == 'hq'}}
-			hqLiveUpdate(notify_id);
-			{{else}}
-			liveUpdate();
-			{{/if}}
+				getData(b64mid, notify_id);
+			}
 
 			if($('#notifications_wrapper').hasClass('fs'))
 				$('#notifications_wrapper').prependTo('#' + notifications_parent).removeClass('fs');
 		}
 	});
 	{{/if}}
+
+	{{foreach $notifications as $notification}}
+	{{if $notification.filter}}
+	$(document).on('click', '#tt-{{$notification.type}}-only', function(e) {
+		e.preventDefault();
+		$('#nav-{{$notification.type}}-menu [data-thread_top=false]').toggle();
+		$(this).toggleClass('active');
+	});
+	{{/if}}
+	{{/foreach}}
+
+	function getData(b64mid, notify_id) {
+		$('.thread-wrapper').remove();
+		bParam_mid = b64mid;
+		mode = 'replace';
+		page_load = true;
+		{{if $module == 'hq'}}
+		liveUpdate(notify_id);
+		{{/if}}
+		{{if $module == 'display'}}
+		liveUpdate();
+		{{/if}}
+	}
 </script>
 
 
@@ -57,7 +82,7 @@
 <div id="notifications_wrapper">
 	<div id="notifications" class="navbar-nav" data-children=".nav-item">
 		<div id="nav-notifications-template" rel="template">
-			<a class="list-group-item clearfix notification {5}" href="{0}" title="{2} {3}" data-b64mid="{6}" data-notify_id="{7}">
+			<a class="list-group-item clearfix notification {5}" href="{0}" title="{2} {3}" data-b64mid="{6}" data-notify_id="{7}" data-thread_top="{8}">
 				<img class="menu-img-3" data-src="{1}">
 				<span class="contactname">{2}</span>
 				<span class="dropdown-sub-text">{3}<br>{4}</span>
@@ -76,9 +101,14 @@
 				</a>
 				{{/if}}
 				{{if $notification.markall}}
-				<a class="list-group-item text-dark" id="nav-{{$notification.type}}-mark-all" href="{{$notification.markall.url}}" onclick="markRead('{{$notification.type}}'); return false;">
+				<div class="list-group-item cursor-pointer" id="nav-{{$notification.type}}-mark-all" onclick="markRead('{{$notification.type}}'); return false;">
 					<i class="fa fa-fw fa-check"></i> {{$notification.markall.label}}
-				</a>
+				</div>
+				{{/if}}
+				{{if $notification.filter}}
+				<div class="list-group-item cursor-pointer" id="tt-{{$notification.type}}-only">
+					<i class="fa fa-fw fa-filter"></i> {{$notification.filter.label}}
+				</div>
 				{{/if}}
 				{{$loading}}
 			</div>

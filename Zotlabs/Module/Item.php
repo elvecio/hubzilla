@@ -59,6 +59,7 @@ class Item extends \Zotlabs\Web\Controller {
 	
 		$profile_uid = ((x($_REQUEST,'profile_uid')) ? intval($_REQUEST['profile_uid'])    : 0);
 		require_once('include/channel.php');
+
 		$sys = get_sys_channel();
 		if($sys && $profile_uid && ($sys['channel_id'] == $profile_uid) && is_site_admin()) {
 			$uid = intval($sys['channel_id']);
@@ -171,7 +172,7 @@ class Item extends \Zotlabs\Web\Controller {
 				);
 			}
 			// if this isn't the real parent of the conversation, find it
-			if($r !== false && count($r)) {
+			if($r) {
 				$parid = $r[0]['parent'];
 				$parent_mid = $r[0]['mid'];
 				if($r[0]['id'] != $r[0]['parent']) {
@@ -179,9 +180,16 @@ class Item extends \Zotlabs\Web\Controller {
 						intval($parid)
 					);
 				}
+
+				// if interacting with a pubstream item, 
+				// create a copy of the parent in your stream
+
+				if($r[0]['uid'] === $sys['channel_id'] && local_channel()) {
+					$r = [ copy_of_pubitem(\App::get_channel(), $r[0]['mid']) ];
+				}
 			}
-	
-			if(($r === false) || (! count($r))) {
+
+			if(! $r) {
 				notice( t('Unable to locate original post.') . EOL);
 				if($api_source)
 					return ( [ 'success' => false, 'message' => 'invalid post id' ] );	
@@ -189,15 +197,12 @@ class Item extends \Zotlabs\Web\Controller {
 					goaway(z_root() . "/" . $return_path );
 				killme();
 			}
-	
-			// can_comment_on_post() needs info from the following xchan_query 
-			// This may be from the discover tab which means we need to correct the effective uid
 
-			xchan_query($r,true,(($r[0]['uid'] == local_channel()) ? 0 : local_channel()));
-	
+			xchan_query($r,true);
+
 			$parent_item = $r[0];
 			$parent = $r[0]['id'];
-	
+
 			// multi-level threading - preserve the info but re-parent to our single level threading
 	
 			$thr_parent = $parent_mid;
@@ -629,6 +634,9 @@ class Item extends \Zotlabs\Web\Controller {
 				if($webpage == ITEM_TYPE_CARD) {
 					$catlink = z_root() . '/cards/' . $channel['channel_address'] . '?f=&cat=' . urlencode(trim($cat));
 				}
+				elseif($webpage == ITEM_TYPE_ARTICLE) {
+					$catlink = z_root() . '/articles/' . $channel['channel_address'] . '?f=&cat=' . urlencode(trim($cat));
+				}
 				else {
 					$catlink = $owner_xchan['xchan_url'] . '?f=&cat=' . urlencode(trim($cat));
 				}
@@ -730,6 +738,18 @@ class Item extends \Zotlabs\Web\Controller {
 			);
 			if($r) {
 				$plink = z_root() . '/cards/' . $channel['channel_address'] . '/' . $r[0]['v'];
+			}
+		}
+
+		if($webpage == ITEM_TYPE_ARTICLE) {
+			$plink = z_root() . '/articles/' . $channel['channel_address'] . '/' . (($pagetitle) ? $pagetitle : substr($mid,0,16));
+		}
+		if(($parent_item) && ($parent_item['item_type'] == ITEM_TYPE_ARTICLE)) {
+			$r = q("select v from iconfig where iconfig.cat = 'system' and iconfig.k = 'ARTICLE' and iconfig.iid = %d limit 1",
+				intval($parent_item['id'])
+			);
+			if($r) {
+				$plink = z_root() . '/articles/' . $channel['channel_address'] . '/' . $r[0]['v'];
 			}
 		}
 

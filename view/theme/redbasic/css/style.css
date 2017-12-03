@@ -105,6 +105,7 @@ a,
   color: $link_colour;
 }
 
+
 a:hover,
 a:focus,
 .fakelink:hover,
@@ -112,7 +113,8 @@ a:focus,
   color: $link_colour;
 }
 
-.fakelink {
+.fakelink,
+.cursor-pointer {
 	cursor: pointer;
 }
 
@@ -1484,7 +1486,7 @@ blockquote {
 	color: $nav_active_icon_colour;
 }
 
-@media screen and (max-width: 767px) {
+@media screen and (max-width: 992px) {
 
 	aside#region_1 {
 		border-right: 1px solid $nav_bd;
@@ -1502,6 +1504,11 @@ blockquote {
 	#nav-app-link-wrapper {
 		min-width: 0;
 		flex-basis: 25%;
+	}
+
+	#navbar-collapse-2 .navbar-app i {
+		font-size: 1rem;
+		margin-right: 0.5rem;
 	}
 
 }
@@ -1726,13 +1733,23 @@ dl.bb-dl > dd > li {
 	margin: 5px;
 }
 
+.cloud-icon-container {
+	width: 48px;
+	height: 48px;
+	border: 1px solid #eee;
+	border-radius: $radius;
+}
+
 .cloud-icon i {
-	font-size: 48px;
+	font-size: 32px;
+	color: #888;
+	margin-top: 8px;
 }
 
 .cloud-icon img {
 	width: 48px;
 	height: 48px;
+	border-radius: $radius;
 }
 
 .cloud-title {

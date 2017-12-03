@@ -329,6 +329,8 @@ function bb_ShareAttributes($match) {
 
 	if(strpos($link,'/cards/'))
 		$type = t('card');
+	elseif(strpos($link,'/articles/'))
+		$type = t('article');
 	else
 		$type = t('post');
 
@@ -705,10 +707,12 @@ function parseIdentityAwareHTML($Text) {
 	return $Text;
 }
 
-	// BBcode 2 HTML was written by WAY2WEB.net
-	// extended to work with Mistpark/Friendica/Redmatrix/Hubzilla - Mike Macgirvin
 
-function bbcode($Text, $preserve_nl = false, $tryoembed = true, $cache = false) {
+function bbcode($Text, $options = []) {
+
+	$preserve_nl = ((array_key_exists('preserve_nl',$options)) ? $options['preserve_nl'] : false);
+	$tryoembed   = ((array_key_exists('tryomebed',$options)) ? $options['tryoembed'] : true);
+	$cache       = ((array_key_exists('cache',$options)) ? $options['cache'] : false);
 
 
 	call_hooks('bbcode_filter', $Text);

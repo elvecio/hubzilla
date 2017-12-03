@@ -951,6 +951,9 @@ function attach_store($channel, $observer_hash, $options = '', $arr = null) {
 		call_hooks('photo_upload_end', $ret);
 	}
 
+	\Zotlabs\Daemon\Master::Summon([ 'Thumbnail' , $hash ]);
+
+
 	if($dosync) {
 		$sync = attach_export_data($channel,$hash);
 
@@ -1629,16 +1632,17 @@ function find_filename_by_hash($channel_id, $attachHash) {
 }
 
 /**
- * @brief Pipes $in to $out in 16MB chunks.
+ * @brief Pipes $in to $out in 16KB chunks.
  *
  * @param resource $in File pointer of input
  * @param resource $out File pointer of output
+ * @param int $bufsize size of chunk, default 16384
  * @return number with the size
  */
-function pipe_streams($in, $out) {
+function pipe_streams($in, $out, $bufsize = 16384) {
 	$size = 0;
 	while (!feof($in))
-		$size += fwrite($out, fread($in, 16384));
+		$size += fwrite($out, fread($in, $bufsize));
 
 	return $size;
 }
@@ -2502,7 +2506,7 @@ function save_chunk($channel,$start,$end,$len) {
 	}
 	if(($len - 1) == $end) {
 		unlink($tmp_path);
-		$result['name']     = $_FILES['files']['tmp_name'];
+		$result['name']     = $_FILES['files']['name'];
 		$result['type']     = $_FILES['files']['type'];
 		$result['tmp_name'] = $new_path;
 		$result['error']    = 0;

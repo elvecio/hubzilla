@@ -1679,9 +1679,9 @@ function prepare_text($text, $content_type = 'text/bbcode', $cache = false) {
 			require_once('include/bbcode.php');
 
 			if(stristr($text,'[nosmile]'))
-				$s = bbcode($text,false,true,$cache);
+				$s = bbcode($text, [ 'cache' => $cache ]);
 			else
-				$s = smilies(bbcode($text,false,true,$cache));
+				$s = smilies(bbcode($text, [ 'cache' => $cache ]));
 
 			$s = zidify_links($s);
 
@@ -2704,8 +2704,8 @@ function linkify_tags($a, &$body, $uid, $diaspora = false) {
 function getIconFromType($type) {
 	$iconMap = array(
 		//Folder
-		t('Collection') => 'fa-folder',
-		'multipart/mixed' => 'fa-folder', //dirs in attach use this mime type
+		t('Collection') => 'fa-folder-o',
+		'multipart/mixed' => 'fa-folder-o', //dirs in attach use this mime type
 		//Common file
 		'application/octet-stream' => 'fa-file-o',
 		//Text
