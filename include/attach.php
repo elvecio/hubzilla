@@ -189,7 +189,7 @@ function attach_count_files($channel_id, $observer, $hash = '', $filename = '', 
  *  * \e array|boolean \b results array with results, or false
  *  * \e string \b message with error messages if any
  */
-function attach_list_files($channel_id, $observer, $hash = '', $filename = '', $filetype = '', $orderby = 'created desc', $start = 0, $entries = 0) {
+function attach_list_files($channel_id, $observer, $hash = '', $filename = '', $filetype = '', $orderby = 'created desc', $start = 0, $entries = 0, $since = '', $until = '') {
 
 	$ret = array('success' => false);
 
@@ -197,6 +197,7 @@ function attach_list_files($channel_id, $observer, $hash = '', $filename = '', $
 		$ret['message'] = t('Permission denied.');
 		return $ret;
 	}
+
 
 	require_once('include/security.php');
 	$sql_extra = permissions_sql($channel_id);
@@ -213,14 +214,22 @@ function attach_list_files($channel_id, $observer, $hash = '', $filename = '', $
 	if($entries)
 		$limit = " limit " . intval($start) . ", " . intval($entries) . " ";
 
-	// Retrieve all columns except 'data'
+	if(! $since)
+		$since = NULL_DATE;
+
+	if(! $until)
+		$until = datetime_convert();
+
+	$sql_extra .= " and created >= '" . dbesc($since) . "' and created <= '" . dbesc($until) . "' ";
+
+	// Retrieve all columns except 'content'
 
 	$r = q("select id, aid, uid, hash, filename, filetype, filesize, revision, folder, os_path, display_path, os_storage, is_dir, is_photo, flags, created, edited, allow_cid, allow_gid, deny_cid, deny_gid from attach where uid = %d $sql_extra ORDER BY $orderby $limit",
 		intval($channel_id)
 	);
 
 	$ret['success'] = ((is_array($r)) ? true : false);
-	$ret['results'] = ((is_array($r)) ? $r : false);
+	$ret['results'] = ((is_array($r)) ? $r : []);
 
 	return $ret;
 }
@@ -276,6 +285,8 @@ function attach_by_hash($hash, $observer_hash, $rev = 0) {
 		return $ret;
 	}
 
+	$r[0]['content'] = dbunescbin($r[0]['content']);
+
 	if($r[0]['folder']) {
 		$x = attach_can_view_folder($r[0]['uid'],$observer_hash,$r[0]['folder']);
 		if(! $x) {
@@ -296,6 +307,11 @@ function attach_can_view_folder($uid,$ob_hash,$folder_hash) {
 	$sql_extra = permissions_sql($uid,$ob_hash);
 	$hash = $folder_hash;
 	$result = false;
+
+	if(! $folder_hash) {
+		return perm_is_allowed($uid,$ob_hash,'view_storage');
+	}
+
 
 	do {
 		$r = q("select folder from attach where hash = '%s' and uid = %d $sql_extra",
@@ -2037,6 +2053,7 @@ function attach_export_data($channel, $resource_id, $deleted = false) {
 		if($hash_ptr === $resource_id) {
 			$attach_ptr = $r[0];
 		}
+		$r[0]['content'] = dbunescbin($r[0]['content']);
 
 		$hash_ptr = $r[0]['folder'];
 		$paths[] = $r[0];
@@ -2049,6 +2066,9 @@ function attach_export_data($channel, $resource_id, $deleted = false) {
 
 
 	if($attach_ptr['is_photo']) {
+
+		// This query could potentially result in a few megabytes of data use.  
+
 		$r = q("select * from photo where resource_id = '%s' and uid = %d order by imgscale asc",
 			dbesc($resource_id),
 			intval($channel['channel_id'])
@@ -2059,6 +2079,17 @@ function attach_export_data($channel, $resource_id, $deleted = false) {
 			}
 			$ret['photo'] = $r;
 		}
+
+//	This query can be used instead in memory starved environments. There will be a corresponding
+//  performance hit during sync because the data will need to be fetched over the network.
+//		$r = q("select aid,uid,xchan,resource_id,created,edited,title,description,album,filename,mimetype,height,width,filesize,imgscale,photo_usage,profile,is_nsfw,os_storage,display_path,photo_flags,allow_cid,allow_gid,deny_cid,deny_gid from photo where resource_id = '%s' and uid = %d order by imgscale asc",
+//			dbesc($resource_id),
+//			intval($channel['channel_id'])
+//		);
+
+//		if($r) {
+//			$ret['photo'] = $r;
+//		}
 
 		$r = q("select * from item where resource_id = '%s' and resource_type = 'photo' and uid = %d ",
 			dbesc($resource_id),
@@ -2222,7 +2253,6 @@ function copy_folder_to_cloudfiles($channel, $observer_hash, $srcpath, $cloudpat
  * the attach.hash of the new parent folder, which must already exist. If $new_folder_hash is blank or empty,
  * the file is relocated to the root of the channel's storage area.
  *
- * @fixme: this operation is currently not synced to clones !!
  *
  * @param int $channel_id
  * @param int $resource_id
@@ -2232,7 +2262,7 @@ function copy_folder_to_cloudfiles($channel, $observer_hash, $srcpath, $cloudpat
 function attach_move($channel_id, $resource_id, $new_folder_hash) {
 
 	$c = channelx_by_n($channel_id);
-	if(! $c)
+	if(! ($c && $resource_id))
 		return false;
 
 	$r = q("select * from attach where hash = '%s' and uid = %d limit 1",
@@ -2244,13 +2274,32 @@ function attach_move($channel_id, $resource_id, $new_folder_hash) {
 
 	$oldstorepath = dbunescbin($r[0]['content']);
 
+	if($r[0]['is_dir']) {
+		$move_success = true;
+		$x = q("select hash from attach where folder = '%s' and uid = %d",
+			dbesc($r[0]['hash']),
+			intval($channel_id)
+		);
+		if($x) {
+			foreach($x as $xv) {
+				$rs = attach_move($channel_id,$xv['hash'],$r[0]['hash']);
+				if(! $rs) {
+					$move_success = false;
+					break;
+				}
+			}
+		}
+		return $move_success;
+	}
+
+
 	if($new_folder_hash) {
-		$n = q("select * from attach where hash = '%s' and uid = %d limit 1",
+		$n = q("select * from attach where hash = '%s' and uid = %d and is_dir = 1 limit 1",
 			dbesc($new_folder_hash),
 			intval($channel_id)
 		);
 		if(! $n)
-			return;
+			return false;
 
 		$newdirname = $n[0]['filename'];
 		$newstorepath = dbunescbin($n[0]['content']) . '/' . $resource_id;
