@@ -48,9 +48,10 @@ require_once('include/zid.php');
 require_once('include/xchan.php');
 require_once('include/hubloc.php');
 require_once('include/attach.php');
+require_once('include/bbcode.php');
 
 define ( 'PLATFORM_NAME',           'hubzilla' );
-define ( 'STD_VERSION',             '3.1' );
+define ( 'STD_VERSION',             '3.1.1' );
 define ( 'ZOT_REVISION',            '1.3' );
 
 define ( 'DB_UPDATE_VERSION',       1198  );
@@ -2009,7 +2010,7 @@ function build_querystring($params, $name = null) {
 }
 
 
-/*
+/**
  * @brief Much better way of dealing with c-style args.
  */
 function argc() {
@@ -2030,6 +2031,8 @@ function dba_timer() {
 /**
  * @brief Returns xchan_hash from the observer.
  *
+ * Observer can be a local or remote channel.
+ *
  * @return string xchan_hash from observer, otherwise empty string if no observer
  */
 function get_observer_hash() {
@@ -2039,7 +2042,6 @@ function get_observer_hash() {
 
 	return '';
 }
-
 
 /**
  * @brief Returns the complete URL of the current page, e.g.: http(s)://something.com/network
