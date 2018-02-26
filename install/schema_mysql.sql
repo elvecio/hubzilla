@@ -651,6 +651,13 @@ CREATE TABLE IF NOT EXISTS `item` (
   KEY `uid_commented` (`uid`, `commented`),
   KEY `uid_created` (`uid`, `created`),
   KEY `uid_item_unseen` (`uid`, `item_unseen`),
+  KEY `uid_item_type` (`uid`, `item_type`),
+  KEY `uid_item_thread_top` (`uid`, `item_thread_top`),
+  KEY `uid_item_blocked` (`uid`, `item_blocked`),
+  KEY `uid_item_wall` (`uid`, `item_wall`),
+  KEY `uid_item_starred` (`uid`, `item_starred`),
+  KEY `uid_item_retained` (`uid`, `item_retained`),
+  KEY `uid_item_private` (`uid`, `item_private`),
   KEY `aid` (`aid`),
   KEY `owner_xchan` (`owner_xchan`),
   KEY `author_xchan` (`author_xchan`),
@@ -661,7 +668,6 @@ CREATE TABLE IF NOT EXISTS `item` (
   KEY `commented` (`commented`),
   KEY `verb` (`verb`),
   KEY `obj_type` (`obj_type`),
-  KEY `item_private` (`item_private`),
   KEY `llink` (`llink`),
   KEY `expires` (`expires`),
   KEY `revision` (`revision`),
@@ -675,11 +681,9 @@ CREATE TABLE IF NOT EXISTS `item` (
   KEY `comments_closed` (`comments_closed`),
   KEY `changed` (`changed`),
   KEY `item_origin` (`item_origin`),
-  KEY `item_unseen` (`item_unseen`),
-  KEY `item_starred` (`item_starred`),
-  KEY `item_uplink` (`item_uplink`),
   KEY `item_wall` (`item_wall`),
-  KEY `item_thread_top` (`item_thread_top`),
+  KEY `item_unseen` (`item_unseen`),
+  KEY `item_uplink` (`item_uplink`),
   KEY `item_notshown` (`item_notshown`),
   KEY `item_nsfw` (`item_nsfw`),
   KEY `item_relay` (`item_relay`),
@@ -687,10 +691,10 @@ CREATE TABLE IF NOT EXISTS `item` (
   KEY `item_nocomment` (`item_nocomment`),
   KEY `item_obscured` (`item_obscured`),
   KEY `item_verified` (`item_verified`),
-  KEY `item_retained` (`item_retained`),
   KEY `item_rss` (`item_rss`),
   KEY `item_consensus` (`item_consensus`),
-  KEY `item_type` (`item_type`)
+  KEY `item_deleted_pending_remove_changed` (`item_deleted`, `item_pending_remove`, `changed`),
+  KEY `item_pending_remove_changed` (`item_pending_remove`, `changed`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS `item_id` (
@@ -962,11 +966,13 @@ CREATE TABLE IF NOT EXISTS `photo` (
 
 CREATE TABLE IF NOT EXISTS `poll` (
   `poll_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `poll_guid` varchar(191) NOT NULL,
   `poll_channel` int(10) unsigned NOT NULL DEFAULT 0 ,
   `poll_desc` text NOT NULL,
   `poll_flags` int(11) NOT NULL DEFAULT 0 ,
   `poll_votes` int(11) NOT NULL DEFAULT 0 ,
   PRIMARY KEY (`poll_id`),
+  KEY `poll_guid` (`poll_guid`),
   KEY `poll_channel` (`poll_channel`),
   KEY `poll_flags` (`poll_flags`),
   KEY `poll_votes` (`poll_votes`)
@@ -974,11 +980,13 @@ CREATE TABLE IF NOT EXISTS `poll` (
 
 CREATE TABLE IF NOT EXISTS `poll_elm` (
   `pelm_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `pelm_guid` varchar(191) NOT NULL,
   `pelm_poll` int(10) unsigned NOT NULL DEFAULT 0 ,
   `pelm_desc` text NOT NULL,
   `pelm_flags` int(11) NOT NULL DEFAULT 0 ,
   `pelm_result` float NOT NULL DEFAULT 0 ,
   PRIMARY KEY (`pelm_id`),
+  KEY `pelm_guid` (`pelm_guid`),
   KEY `pelm_poll` (`pelm_poll`),
   KEY `pelm_result` (`pelm_result`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -1256,12 +1264,14 @@ CREATE TABLE IF NOT EXISTS `verify` (
 
 CREATE TABLE IF NOT EXISTS `vote` (
   `vote_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `vote_guid` varchar(191) NOT NULL, 
   `vote_poll` int(11) NOT NULL DEFAULT 0 ,
   `vote_element` int(11) NOT NULL DEFAULT 0 ,
   `vote_result` text NOT NULL,
   `vote_xchan` char(191) NOT NULL DEFAULT '',
   PRIMARY KEY (`vote_id`),
   UNIQUE KEY `vote_vote` (`vote_poll`,`vote_element`,`vote_xchan`),
+  KEY `vote_guid` (`vote_guid`),
   KEY `vote_poll` (`vote_poll`),
   KEY `vote_element` (`vote_element`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

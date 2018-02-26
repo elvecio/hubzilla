@@ -979,7 +979,7 @@ function contact_block() {
 				// than wishful thinking; even though soapbox channels and feeds will disable it. 
 
 				if(! intval(get_abconfig(App::$profile['uid'],$rr['xchan_hash'],'their_perms','post_comments'))) {
-					$rr['archived'] = true;
+					$rr['oneway'] = true;
 				}
 				$micropro[] = micropro($rr,true,'mpfriend');
 			}
@@ -1033,6 +1033,7 @@ function micropro($contact, $redirect = false, $class = '', $textmode = false) {
 	return replace_macros(get_markup_template(($textmode)?'micropro_txt.tpl':'micropro_img.tpl'),array(
 		'$click' => (($contact['click']) ? $contact['click'] : ''),
 		'$class' => $class . (($contact['archived']) ? ' archived' : ''),
+		'$oneway' => (($contact['oneway']) ? true : false),
 		'$url' => $url,
 		'$photo' => $contact['xchan_photo_s'],
 		'$name' => $contact['xchan_name'],
@@ -2160,6 +2161,35 @@ function ids_to_querystr($arr,$idx = 'id',$quote = false) {
 }
 
 /**
+ * @brief array_elm_to_str($arr,$elm,$delim = ',') extract unique individual elements from an array of arrays and return them as a string separated by a delimiter
+ * similar to ids_to_querystr, but allows a different delimiter instead of a db-quote option 
+ * empty elements (evaluated after trim()) are ignored.
+ * @param $arr array
+ * @param $elm array key to extract from sub-array
+ * @param $delim string default ','
+ * @returns string
+ */
+
+function array_elm_to_str($arr,$elm,$delim = ',') {
+
+	$tmp = [];
+	if($arr && is_array($arr)) {
+		foreach($arr as $x) {
+			if(is_array($x) && array_key_exists($elm,$x)) {
+				$z = trim($x[$elm]);
+				if(($z) && (! in_array($z,$tmp))) {
+					$tmp[] = $z;
+				}
+			}
+		}
+	}
+	return implode($delim,$tmp);
+}
+
+
+
+
+/**
  * @brief Fetches xchan and hubloc data for an array of items with only an
  * author_xchan and owner_xchan.
  *
@@ -3262,30 +3292,4 @@ function purify_filename($s) {
 	return $s;
 }
 
-
-/**
- * @brief array_elm_to_str($arr,$elm,$delim = ',') extract unique individual elements from an array of arrays and return them as a string separated by a delimiter
- *  
- * empty elements (evaluated after trim()) are ignored.
- * @param $arr array
- * @param $elm array key to extract from sub-array
- * @param $delim string default ','
- * @returns string
- */
-
-function array_elm_to_str($arr,$elm,$delim = ',') {
-
-	$tmp = [];
-	if($arr && is_array($arr)) {
-		foreach($arr as $x) {
-			if(is_array($x) && array_key_exists($elm,$x)) {
-				$z = trim($x[$elm]);
-				if(($z) && (! in_array($z,$tmp))) {
-					$tmp[] = $z;
-				}
-			}
-		}
-	}
-	return implode($tmp,$delim);
-}
 

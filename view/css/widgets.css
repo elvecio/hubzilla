@@ -180,7 +180,7 @@ a.wikilist {
 }
 
 .notifications-textinput input {
-	font-family: FontAwesome, sans-serif;
+	font-family: sans-serif, ForkAwesome;
 }
 
 .notifications-textinput {
@@ -215,4 +215,11 @@ a.wikilist {
 
 #notifications {
 	margin-bottom: 1rem;
+}
+
+/* contact block */
+.contact-block-div .oneway-overlay {
+	font-size: 20px;
+	margin-left: -25px;
+	margin-top: 25px;
 }

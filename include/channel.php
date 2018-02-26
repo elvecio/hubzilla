@@ -1449,6 +1449,7 @@ function profile_sidebar($profile, $block = 0, $show_connect = true, $zcard = fa
 		'$reddress'      => $reddress,
 		'$rating'        => '',
 		'$contact_block' => $contact_block,
+		'$change_photo'  => t('Change your profile photo'),
 		'$editmenu'      => profile_edit_menu($profile['uid'])
 	));
 
@@ -1897,7 +1898,7 @@ function get_profile_fields_basic($filter = 0) {
 
 	$profile_fields_basic = (($filter == 0) ? get_config('system','profile_fields_basic') : null);
 	if(! $profile_fields_basic)
-		$profile_fields_basic = array('fullname','pdesc','chandesc','comms','gender','dob','dob_tz','address','locality','region','postal_code','country_name','marital','sexual','homepage','hometown','keywords','about','contact');
+		$profile_fields_basic = array('fullname','pdesc','chandesc','comms','gender','dob','dob_tz','region','country_name','marital','sexual','homepage','hometown','keywords','about','contact');
 
 	$x = array();
 	if($profile_fields_basic)
@@ -1912,7 +1913,7 @@ function get_profile_fields_advanced($filter = 0) {
 	$basic = get_profile_fields_basic($filter);
 	$profile_fields_advanced = (($filter == 0) ? get_config('system','profile_fields_advanced') : null);
 	if(! $profile_fields_advanced)
-		$profile_fields_advanced = array('partner','howlong','politic','religion','likes','dislikes','interest','channels','music','book','film','tv','romance','employment','education');
+		$profile_fields_advanced = array('address','locality','postal_code','partner','howlong','politic','religion','likes','dislikes','interest','channels','music','book','film','tv','romance','employment','education');
 
 	$x = array();
 	if($basic)
@@ -2553,10 +2554,10 @@ function channel_remove($channel_id, $local = true, $unset_session = false) {
 	q("DELETE FROM profile WHERE uid = %d", intval($channel_id));
 	q("DELETE FROM src WHERE src_channel_id = %d", intval($channel_id));
 
-	$r = q("select resource_id FROM attach WHERE uid = %d", intval($channel_id));
+	$r = q("select hash FROM attach WHERE uid = %d", intval($channel_id));
 	if($r) {
 		foreach($r as $rv) {
-			attach_delete($channel_id,$rv['resource_id']);
+			attach_delete($channel_id,$rv['hash']);
 		}
 	}
 	
