@@ -24,7 +24,7 @@ class Site {
 		$siteinfo			=	((x($_POST,'siteinfo'))		    ? trim($_POST['siteinfo'])				: '');
 		$language			=	((x($_POST,'language'))			? notags(trim($_POST['language']))			: '');
 		$theme				=	((x($_POST,'theme'))			? notags(trim($_POST['theme']))				: '');
-		$theme_mobile			=	((x($_POST,'theme_mobile'))		? notags(trim($_POST['theme_mobile']))			: '');
+//		$theme_mobile			=	((x($_POST,'theme_mobile'))		? notags(trim($_POST['theme_mobile']))			: '');
 //		$site_channel			=	((x($_POST,'site_channel'))	? notags(trim($_POST['site_channel']))				: '');
 		$maximagesize		=	((x($_POST,'maximagesize'))		? intval(trim($_POST['maximagesize']))				:  0);
 
@@ -122,11 +122,11 @@ class Site {
 		set_config('system','siteinfo',$siteinfo);
 		set_config('system', 'language', $language);
 		set_config('system', 'theme', $theme);
-		if ( $theme_mobile === '---' ) {
-			del_config('system', 'mobile_theme');
-		} else {
-			set_config('system', 'mobile_theme', $theme_mobile);
-		}
+//		if ( $theme_mobile === '---' ) {
+//			del_config('system', 'mobile_theme');
+//		} else {
+//			set_config('system', 'mobile_theme', $theme_mobile);
+//		}
 	//	set_config('system','site_channel', $site_channel);
 		set_config('system','maximagesize', $maximagesize);
 
@@ -220,9 +220,10 @@ class Site {
 		$realm = get_directory_realm();
 
 		// directory server should not be set or settable unless we are a directory client
+		// avoid older redmatrix servers which don't have modern encryption
 
 		if($dirmode == DIRECTORY_MODE_NORMAL) {
-			$x = q("select site_url from site where site_flags in (%d,%d) and site_realm = '%s' and site_dead = 0",
+			$x = q("select site_url from site where site_flags in (%d,%d) and site_realm = '%s' and site_dead = 0 and site_project != 'redmatrix'",
 				intval(DIRECTORY_MODE_SECONDARY),
 				intval(DIRECTORY_MODE_PRIMARY),
 				dbesc($realm)
@@ -304,7 +305,7 @@ class Site {
 			'$siteinfo'		=> array('siteinfo', t('Site Information'), get_config('system','siteinfo'), t("Publicly visible description of this site.  Displayed on siteinfo page.  BBCode can be used here")),
 			'$language' 		=> array('language', t("System language"), get_config('system','language'), "", $lang_choices),
 			'$theme' 			=> array('theme', t("System theme"), get_config('system','theme'), t("Default system theme - may be over-ridden by user profiles - <a href='#' id='cnftheme'>change theme settings</a>"), $theme_choices),
-			'$theme_mobile' 	=> array('theme_mobile', t("Mobile system theme"), get_config('system','mobile_theme'), t("Theme for mobile devices"), $theme_choices_mobile),
+//			'$theme_mobile' 	=> array('theme_mobile', t("Mobile system theme"), get_config('system','mobile_theme'), t("Theme for mobile devices"), $theme_choices_mobile),
 //			'$site_channel' 	=> array('site_channel', t("Channel to use for this website's static pages"), get_config('system','site_channel'), t("Site Channel")),
 			'$feed_contacts'    => array('feed_contacts', t('Allow Feeds as Connections'),get_config('system','feed_contacts'),t('(Heavy system resource usage)')),
 			'$maximagesize'		=> array('maximagesize', t("Maximum image size"), intval(get_config('system','maximagesize')), t("Maximum size in bytes of uploaded images. Default is 0, which means no limits.")),
