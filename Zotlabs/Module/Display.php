@@ -102,12 +102,19 @@ class Display extends \Zotlabs\Web\Controller {
 		if($decoded)
 			$item_hash = $decoded;
 
-		$r = q("select id, uid, mid, parent_mid, thr_parent, verb, item_type, item_deleted, item_blocked from item where mid like '%s' limit 1",
+		$r = q("select id, uid, mid, parent_mid, thr_parent, verb, item_type, item_deleted, author_xchan, item_blocked from item where mid like '%s' limit 1",
 			dbesc($item_hash . '%')
 		);
 	
 		if($r) {
 			$target_item = $r[0];
+		}
+
+		$x = q("select * from xchan where xchan_hash = '%s' limit 1",
+			dbesc($target_item['author_xchan'])
+		);
+		if($x) {
+			\App::$poi = $x[0];
 		}
 
 		//if the item is to be moderated redirect to /moderate
@@ -134,6 +141,41 @@ class Display extends \Zotlabs\Web\Controller {
 			 	return '';
 			}
 		}
+		if($target_item['item_type']  == ITEM_TYPE_ARTICLE) {
+			$x = q("select * from channel where channel_id = %d limit 1",
+				intval($target_item['uid'])
+			);
+			$y = q("select * from iconfig left join item on iconfig.iid = item.id 
+				where item.uid = %d and iconfig.cat = 'system' and iconfig.k = 'ARTICLE' and item.id = %d limit 1",
+				intval($target_item['uid']),
+				intval($target_item['id'])
+			);
+			if($x && $y) {
+				goaway(z_root() . '/articles/' . $x[0]['channel_address'] . '/' . $y[0]['v']);
+			}
+			else {
+				notice( t('Page not found.') . EOL);
+			 	return '';
+			}
+		}
+		if($target_item['item_type']  == ITEM_TYPE_CARD) {
+			$x = q("select * from channel where channel_id = %d limit 1",
+				intval($target_item['uid'])
+			);
+			$y = q("select * from iconfig left join item on iconfig.iid = item.id 
+				where item.uid = %d and iconfig.cat = 'system' and iconfig.k = 'CARD' and item.id = %d limit 1",
+				intval($target_item['uid']),
+				intval($target_item['id'])
+			);
+			if($x && $y) {
+				goaway(z_root() . '/cards/' . $x[0]['channel_address'] . '/' . $y[0]['v']);
+			}
+			else {
+				notice( t('Page not found.') . EOL);
+			 	return '';
+			}
+		}
+		
 		
 		$static = ((array_key_exists('static',$_REQUEST)) ? intval($_REQUEST['static']) : 0);
 	

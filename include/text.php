@@ -1491,7 +1491,7 @@ function format_hashtags(&$item) {
 			$term = htmlspecialchars($t['term'], ENT_COMPAT, 'UTF-8', false) ;
 			if(! trim($term))
 				continue;
-			if(strpos($item['body'], $t['url']))
+			if($t['url'] && strpos($item['body'], $t['url']))
 				continue;
 			if($s)
 				$s .= ' ';
@@ -3318,3 +3318,19 @@ function featured_sort($a,$b) {
 	$s2 = substr($b,strpos($b,'id='),20);
 	return(strcmp($s1,$s2));
 }
+
+
+function punify($s) {
+	require_once('vendor/simplepie/simplepie/idn/idna_convert.class.php');
+	$x = new idna_convert(['encoding' => 'utf8']);
+	return $x->encode($s);
+
+}
+
+function unpunify($s) {
+	require_once('vendor/simplepie/simplepie/idn/idna_convert.class.php');
+	$x = new idna_convert(['encoding' => 'utf8']);
+	return $x->decode($s);
+
+}
+

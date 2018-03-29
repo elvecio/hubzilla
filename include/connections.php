@@ -100,7 +100,6 @@ function vcard_from_xchan($xchan, $observer = null, $mode = '') {
 	if(! $xchan)
 		return;
 
-// FIXME - show connect button to observer if appropriate
 	$connect = false;
 	if(local_channel()) {
 		$r = q("select * from abook where abook_xchan = '%s' and abook_channel = %d limit 1",
@@ -421,7 +420,10 @@ function random_profile() {
 
 	for($i = 0; $i < $retryrandom; $i++) {
 
-		$r = q("select xchan_url, xchan_hash from xchan left join hubloc on hubloc_hash = xchan_hash where xchan_hidden = 0 and xchan_system = 0 and hubloc_connected > %s - interval %s order by $randfunc limit 1",
+		$r = q("select xchan_url, xchan_hash from xchan left join hubloc on hubloc_hash = xchan_hash where
+			xchan_hidden = 0 and xchan_system = 0 and
+			xchan_network = 'zot' and xchan_deleted = 0 and
+			hubloc_connected > %s - interval %s order by $randfunc limit 1",
 			db_utcnow(),
 			db_quoteinterval('30 day')
 		);
