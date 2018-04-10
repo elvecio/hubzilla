@@ -24,7 +24,7 @@ class Acl extends \Zotlabs\Web\Controller {
 
 	function init() {
 
-		logger('mod_acl: ' . print_r($_REQUEST,true));
+		logger('mod_acl: ' . print_r($_REQUEST,true),LOGGER_DATA);
 
 		$start    = (x($_REQUEST,'start')  ? $_REQUEST['start']  : 0);
 		$count    = (x($_REQUEST,'count')  ? $_REQUEST['count']  : 500);
@@ -95,7 +95,7 @@ class Acl extends \Zotlabs\Web\Controller {
 					. "' IN xchan_name) else position('" . protect_sprintf(dbesc(punify($search))) . "' IN xchan_addr) end, ";
 
 			$col = ((strpos($search,'@') !== false) ? 'xchan_addr' : 'xchan_name' );
-			$sql_extra3 = "AND $col like " . protect_sprintf( "'%" . dbesc($search) . "%'" ) . " ";
+			$sql_extra3 = "AND $col like " . protect_sprintf( "'%" . dbesc(($col === 'xchan_addr') ? punify($search) : $search) . "%'" ) . " ";
 	
 		}
 		else {

@@ -1607,6 +1607,7 @@ function get_site_info() {
 		'register_policy'              =>  $register_policy[get_config('system','register_policy')],
 		'invitation_only'              => (bool) intval(get_config('system','invitation_only')),
 		'directory_mode'               =>  $directory_mode[get_config('system','directory_mode')],
+		'directory_server'             => get_config('system','directory_server'),
 		'language'                     => get_config('system','language'),
 		'rss_connections'              => (bool) intval(get_config('system','feed_contacts')),
 		'expiration'                   => $site_expire,
@@ -1873,7 +1874,7 @@ function probe_api_path($host) {
 		foreach($paths as $path) {
 			$curpath = $scheme . '://' . $host . $path;
 			$x = z_fetch_url($curpath);
-			if($x['success'] && ! strlen($x['body'], 'not implemented'))
+			if($x['success'] && ! strpos($x['body'], 'not implemented'))
 				return str_replace('version', '', $curpath);
 		}
 	}

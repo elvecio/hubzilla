@@ -412,12 +412,16 @@ class Channel {
 		));
 	
 		$subdir = ((strlen(\App::get_path())) ? '<br />' . t('or') . ' ' . z_root() . '/channel/' . $nickname : '');
+
+		$webbie = $nickname . '@' . \App::get_hostname();
+		$intl_nickname = unpunify($nickname) . '@' . unpunify(\App::get_hostname());
 	
+
 		$tpl_addr = get_markup_template("settings_nick_set.tpl");
 	
 		$prof_addr = replace_macros($tpl_addr,array(
 			'$desc' => t('Your channel address is'),
-			'$nickname' => $nickname,
+			'$nickname' => (($intl_nickname === $webbie) ? $webbie : $intl_nickname . '&nbsp;(' . $webbie . ')'),
 			'$subdir' => $subdir,
 			'$davdesc' => t('Your files/photos are accessible via WebDAV at'),
 			'$davpath' => ((get_account_techlevel() > 3) ? z_root() . '/dav/' . $nickname : ''),
@@ -480,7 +484,8 @@ class Channel {
 		$plugin = [ 'basic' => '', 'security' => '', 'notify' => '', 'misc' => '' ];
 		call_hooks('channel_settings',$plugin);
 
-		$disable_discover_tab = get_config('system','disable_discover_tab') || get_config('system','disable_discover_tab') === false;
+		$disable_discover_tab = intval(get_config('system','disable_discover_tab',1)) == 1;
+		$site_firehose = intval(get_config('system','site_firehose',0)) == 1;
 
 		$o .= replace_macros($stpl,array(
 			'$ptitle' 	=> t('Channel Settings'),
@@ -571,7 +576,7 @@ class Channel {
 			'$vnotify10'  => array('vnotify10', t('New connections'), ($vnotify & VNOTIFY_INTRO), VNOTIFY_INTRO, t('Recommended'), $yes_no),
 			'$vnotify11'  => ((is_site_admin()) ? array('vnotify11', t('System Registrations'), ($vnotify & VNOTIFY_REGISTER), VNOTIFY_REGISTER, '', $yes_no) : array()),
 			'$vnotify12'  => array('vnotify12', t('Unseen shared files'), ($vnotify & VNOTIFY_FILES), VNOTIFY_FILES, '', $yes_no),
-			'$vnotify13'  => (($disable_discover_tab) ? array() : array('vnotify13', t('Unseen public activity'), ($vnotify & VNOTIFY_PUBS), VNOTIFY_PUBS, '', $yes_no)),
+			'$vnotify13'  => (($disable_discover_tab && !$site_firehose) ? array() : array('vnotify13', t('Unseen public activity'), ($vnotify & VNOTIFY_PUBS), VNOTIFY_PUBS, '', $yes_no)),
 			'$mailhost' => [ 'mailhost', t('Email notification hub (hostname)'), get_pconfig(local_channel(),'system','email_notify_host',\App::get_hostname()), sprintf( t('If your channel is mirrored to multiple hubs, set this to your preferred location. This will prevent duplicate email notifications. Example: %s'),\App::get_hostname()) ],
 			'$always_show_in_notices'  => array('always_show_in_notices', t('Also show new wall posts, private messages and connections under Notices'), $always_show_in_notices, 1, '', $yes_no),
 	

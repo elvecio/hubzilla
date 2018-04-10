@@ -198,7 +198,7 @@ function string2bb(element) {
 
 		// Autocomplete forums
 		forums = {
-			match: /(^|\s)(\!)([^ \n]+)$/,
+			match: /(^|\s)(\!\!*)([^ \n]+)$/,
 			index: 3,
 			search: function(term, callback) { contact_search(term, callback, backend_url, 'f', extra_channels, spinelement=false); },
 			replace: editor_replace,
@@ -210,7 +210,7 @@ function string2bb(element) {
 		tags = {
 			match: /(^|\s)(\#)([^ \n]{2,})$/,
 			index: 3,
-			search: function(term, callback) { $.getJSON('/hashtags/' + '$f=&t=' + term).done(function(data) { callback($.map(data, function(entry) { return entry.text.indexOf(term) === 0 ? entry : null; })); }); },
+			search: function(term, callback) { $.getJSON('/hashtags/' + '$f=&t=' + term).done(function(data) { callback($.map(data, function(entry) { return entry.text.toLowerCase().indexOf(term.toLowerCase()) === 0 ? entry : null; })); }); },
 			replace: function(item) { return "$1$2" + item.text + ' '; },
 			context: function(text) { return text.toLowerCase(); },
 			template: tag_format
@@ -243,8 +243,19 @@ function string2bb(element) {
 			replace: basic_replace,
 			template: contact_format,
 		};
+
+		// Autocomplete forums
+		forums = {
+			match: /(^\!)([^\n]{3,})$/,
+			index: 2,
+			search: function(term, callback) { contact_search(term, callback, backend_url, 'f', [], spinelement='#nav-search-spinner'); },
+			replace: basic_replace,
+			template: contact_format
+		};
+
+
 		this.attr('autocomplete', 'off');
-		var a = this.textcomplete([contacts], {className:'acpopup', maxCount:100, zIndex: 1020, appendTo:'nav'});
+		var a = this.textcomplete([contacts,forums], {className:'acpopup', maxCount:100, zIndex: 1020, appendTo:'nav'});
 		a.on('textComplete:select', function(e, value, strategy) { submit_form(this); });
 	};
 })( jQuery );
