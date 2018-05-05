@@ -41,10 +41,8 @@ class PermissionLimits {
 		$limits = [];
 		$perms = Permissions::Perms();
 
-		$anon_comments = get_config('system','anonymous_comments',true);
-
 		foreach($perms as $k => $v) {
-			if(strstr($k, 'view') || ($k === 'post_comments' && $anon_comments))
+			if(strstr($k, 'view'))
 				$limits[$k] = PERMS_PUBLIC;
 			else
 				$limits[$k] = PERMS_SPECIFIC;
@@ -74,13 +72,13 @@ class PermissionLimits {
 	 * @param int $channel_id
 	 * @param string $perm (optional)
 	 * @return
-	 *   * \b boolean false if no perm_limits set for this channel
-	 *   * \b int if $perm is set, return one of PERMS_* constants for this permission
+	 *   * \b false if no perm_limits set for this channel
+	 *   * \b int if $perm is set, return one of PERMS_* constants for this permission, default 0
 	 *   * \b array with all permission limits, if $perm is not set
 	 */
 	static public function Get($channel_id, $perm = '') {
 		if($perm) {
-			return PConfig::Get($channel_id, 'perm_limits', $perm);
+			return intval(PConfig::Get($channel_id, 'perm_limits', $perm));
 		}
 
 		PConfig::Load($channel_id);

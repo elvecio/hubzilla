@@ -141,6 +141,10 @@ class ThreadItem {
 				'delete' => t('Delete'),
 			);
 		}		
+		elseif(is_site_admin()) {
+			$drop = [ 'dropping' => true, 'delete' => t('Admin Delete') ];
+		}
+
 // FIXME
 		if($observer_is_pageowner) {		
 			$multidrop = array(
@@ -238,9 +242,9 @@ class ThreadItem {
 					'do' => t("Add Star"),
 					'undo' => t("Remove Star"),
 					'toggle' => t("Toggle Star Status"),
-					'classdo' => (intval($item['item_starred']) ? "hidden" : ""),
-					'classundo' => (intval($item['item_starred']) ? "" : "hidden"),
-					'isstarred' => (intval($item['item_starred']) ? "starred fa-star" : "unstarred fa-star-o"),
+					'classdo' => ((intval($item['item_starred'])) ? "hidden" : ""),
+					'classundo' => ((intval($item['item_starred'])) ? "" : "hidden"),
+					'isstarred' => ((intval($item['item_starred'])) ? true : false),
 					'starred' =>  t('starred'),
 				);
 

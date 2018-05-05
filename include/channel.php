@@ -2240,6 +2240,11 @@ function get_zcard_embed($channel, $observer_hash = '', $args = array()) {
  *   - false if no channel with $nick was found
  */
 function channelx_by_nick($nick) {
+
+	// If we are provided a Unicode nickname convert to IDN
+
+	$nick = punify($nick);
+
 	$r = q("SELECT * FROM channel left join xchan on channel_hash = xchan_hash WHERE channel_address = '%s'  and channel_removed = 0 LIMIT 1",
 		dbesc($nick)
 	);
@@ -2563,7 +2568,7 @@ function channel_remove($channel_id, $local = true, $unset_session = false) {
 	q("DELETE FROM photo WHERE uid = %d", intval($channel_id));
 	q("DELETE FROM attach WHERE uid = %d", intval($channel_id));
 	q("DELETE FROM profile WHERE uid = %d", intval($channel_id));
-	q("DELETE FROM src WHERE src_channel_id = %d", intval($channel_id));
+	q("DELETE FROM source WHERE src_channel_id = %d", intval($channel_id));
 
 	$r = q("select hash FROM attach WHERE uid = %d", intval($channel_id));
 	if($r) {

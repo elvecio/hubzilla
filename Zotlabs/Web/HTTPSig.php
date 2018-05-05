@@ -59,6 +59,8 @@ class HTTPSig {
 			$headers['(request-target)'] =
 				strtolower($_SERVER['REQUEST_METHOD']) . ' ' .
 				$_SERVER['REQUEST_URI'];
+			$headers['content-type'] = $_SERVER['CONTENT_TYPE'];
+
 			foreach($_SERVER as $k => $v) {
 				if(strpos($k,'HTTP_') === 0) {
 					$field = str_replace('_','-',strtolower(substr($k,5)));
@@ -66,6 +68,10 @@ class HTTPSig {
 				}
 			}
 		}
+
+		// logger('SERVER: ' . print_r($_SERVER,true), LOGGER_ALL);
+
+		// logger('headers: ' . print_r($headers,true), LOGGER_ALL);
 
 		$sig_block = null;
 
@@ -189,15 +195,17 @@ class HTTPSig {
 		if($x && $x[0]['xchan_pubkey']) {
 			return ($x[0]['xchan_pubkey']);
 		}
-		$r = as_fetch($id);
+
+		if(function_exists('as_fetch'))
+			$r = as_fetch($id);
 
 		if($r) {
 			$j = json_decode($r,true);
 
-			if($j['id'] !== $id)
-				return false;
-
 			if(array_key_exists('publicKey',$j) && array_key_exists('publicKeyPem',$j['publicKey'])) {
+				if((array_key_exists('id',$j['publicKey']) && $j['publicKey']['id'] !== $id) && $j['id'] !== $id)
+					return false;
+
 				return($j['publicKey']['publicKeyPem']);
 			}
 		}

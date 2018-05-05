@@ -50,11 +50,11 @@ require_once('include/attach.php');
 require_once('include/bbcode.php');
 
 define ( 'PLATFORM_NAME',           'hubzilla' );
-define ( 'STD_VERSION',             '3.3.4' );
+define ( 'STD_VERSION',             '3.5.3' );
 define ( 'ZOT_REVISION',            '6.0a' );
 
 
-define ( 'DB_UPDATE_VERSION',       1210 );
+define ( 'DB_UPDATE_VERSION',       1212 );
 
 define ( 'PROJECT_BASE',   __DIR__ );
 
@@ -81,7 +81,7 @@ define ( 'DIRECTORY_MODE_STANDALONE',  0x0100); // A detached (off the grid) hub
 // point to go out and find the rest of the world.
 
 define ( 'DIRECTORY_REALM',            'RED_GLOBAL');
-define ( 'DIRECTORY_FALLBACK_MASTER',  'https://gravizot.de');
+define ( 'DIRECTORY_FALLBACK_MASTER',  'https://zotadel.net');
 
 $DIRECTORY_FALLBACK_SERVERS = array(
 	'https://hubzilla.zottel.net',
@@ -404,6 +404,7 @@ define ( 'VNOTIFY_INTRO',      0x0200 );
 define ( 'VNOTIFY_REGISTER',   0x0400 );
 define ( 'VNOTIFY_FILES',      0x0800 );
 define ( 'VNOTIFY_PUBS',       0x1000 );
+define ( 'VNOTIFY_LIKE',       0x2000 );
 
 
 
@@ -480,6 +481,7 @@ define ( 'ACTIVITY_ABSTAIN',     NAMESPACE_ZOT   . '/activity/abstain' );
 define ( 'ACTIVITY_ATTEND',      NAMESPACE_ZOT   . '/activity/attendyes' );
 define ( 'ACTIVITY_ATTENDNO',    NAMESPACE_ZOT   . '/activity/attendno' );
 define ( 'ACTIVITY_ATTENDMAYBE', NAMESPACE_ZOT   . '/activity/attendmaybe' );
+define ( 'ACTIVITY_POLLRESPONSE', NAMESPACE_ZOT  . '/activity/pollresponse' );
 
 define ( 'ACTIVITY_OBJ_HEART',   NAMESPACE_ZOT   . '/activity/heart' );
 
@@ -884,7 +886,7 @@ class App {
 
 		// unix style "homedir"
 
-		if(substr(self::$cmd, 0, 1) === '~')
+		if((substr(self::$cmd, 0, 1) === '~') || (substr(self::$cmd, 0, 1) === '@'))
 			self::$cmd = 'channel/' . substr(self::$cmd, 1);
 
 		/*

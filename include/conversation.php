@@ -404,7 +404,7 @@ function count_descendants($item) {
  * @return boolean
  */
 function visible_activity($item) {
-	$hidden_activities = [ ACTIVITY_LIKE, ACTIVITY_DISLIKE, ACTIVITY_AGREE, ACTIVITY_DISAGREE, ACTIVITY_ABSTAIN, ACTIVITY_ATTEND, ACTIVITY_ATTENDNO, ACTIVITY_ATTENDMAYBE ];
+	$hidden_activities = [ ACTIVITY_LIKE, ACTIVITY_DISLIKE, ACTIVITY_AGREE, ACTIVITY_DISAGREE, ACTIVITY_ABSTAIN, ACTIVITY_ATTEND, ACTIVITY_ATTENDNO, ACTIVITY_ATTENDMAYBE, ACTIVITY_POLLRESPONSE ];
 
 	if(intval($item['item_notshown']))
 		return false;
@@ -930,7 +930,7 @@ function thread_action_menu($item,$mode = '') {
 		$menu[] = [ 
 			'menu' => 'view_source',
 			'title' => t('View Source'),
-			'icon' => 'eye',
+			'icon' => 'code',
 			'action' => 'viewsrc(' . $item['id'] . '); return false;',
 			'href' => '#'
 		];
@@ -1039,7 +1039,7 @@ function thread_author_menu($item, $mode = '') {
 	if($posts_link) {
 		$menu[] = [ 
 			'menu' => 'view_posts',
-			'title' => t('Activity/Posts'),
+			'title' => t('Recent Activity'),
 			'icon' => 'fw',
 			'action' => '',
 			'href' => $posts_link
@@ -1724,7 +1724,7 @@ function network_tabs() {
 	if(feature_enabled(local_channel(),'star_posts')) {
 		$tabs[] = array(
 			'label' => t('Starred'),
-			'url'=>z_root() . '/' . $cmd . ((x($_GET,'cid')) ? '/?f=&cid=' . $_GET['cid'] : '') . '&star=1',
+			'url'=>z_root() . '/' . $cmd . '/?f=' . ((x($_GET,'cid')) ? '&cid=' . $_GET['cid'] : '') . '&star=1',
 			'sel'=>$starred_active,
 			'title' => t('Favourite Posts'),
 		);
