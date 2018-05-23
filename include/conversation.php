@@ -1001,17 +1001,20 @@ function thread_author_menu($item, $mode = '') {
 	$profile_link = chanlink_hash($item['author_xchan']);
 	$contact = false;
 
-	if(App::$contacts && array_key_exists($item['author_xchan'],App::$contacts))
-		$contact = App::$contacts[$item['author_xchan']];
-	else
-		if($local_channel && $item['author']['xchan_addr'])
-			$follow_url = z_root() . '/follow/?f=&url=' . urlencode($item['author']['xchan_addr']) . '&interactive=0';
-
+	if($channel['channel_hash'] !== $item['author_xchan']) {
+		if(App::$contacts && array_key_exists($item['author_xchan'],App::$contacts)) {
+			$contact = App::$contacts[$item['author_xchan']];
+		}
+		else {
+			if($local_channel && $item['author']['xchan_addr'] && (! in_array($item['author']['xchan_network'],[ 'rss', 'anon','unknown' ]))) {
+				$follow_url = z_root() . '/follow/?f=&url=' . urlencode($item['author']['xchan_addr']) . '&interactive=0';
+			}
+		}
 	
-	if($item['uid'] > 0 && author_is_pmable($item['author'],$contact)) {
-		$pm_url = z_root() . '/mail/new/?f=&hash=' . urlencode($item['author_xchan']);
+		if($item['uid'] > 0 && author_is_pmable($item['author'],$contact)) {
+			$pm_url = z_root() . '/mail/new/?f=&hash=' . urlencode($item['author_xchan']);
+		}
 	}
-
 
 	if($contact) {
 		$poke_link = z_root() . '/poke/?f=&c=' . $contact['abook_id'];
@@ -1279,7 +1282,7 @@ function status_editor($a, $x, $popup = false) {
 	if(x($x, 'hide_weblink'))
 		$weblink = false;
 	
-	$embedPhotos = t('Embed image from photo albums');
+	$embedPhotos = t('Embed (existing) photo from your photo albums');
 
 	$writefiles = (($mimetype === 'text/bbcode') ? perm_is_allowed($x['profile_uid'], get_observer_hash(), 'write_storage') : false);
 	if(x($x, 'hide_attach'))
@@ -1301,6 +1304,8 @@ function status_editor($a, $x, $popup = false) {
 		$id_select = '';
 
 	$webpage = ((x($x,'webpage')) ? $x['webpage'] : '');
+
+	$reset = ((x($x,'reset')) ? $x['reset'] : '');
 	
 	$feature_auto_save_draft = ((feature_enabled($x['profile_uid'], 'auto_save_draft')) ? "true" : "false");
 	
@@ -1326,6 +1331,7 @@ function status_editor($a, $x, $popup = false) {
 		'$nocomment_enabled' => t('Comments enabled'),
 		'$nocomment_disabled' => t('Comments disabled'),
 		'$auto_save_draft' => $feature_auto_save_draft,
+		'$reset' => $reset
 	));
 
 	$tpl = get_markup_template('jot.tpl');
@@ -1382,7 +1388,7 @@ function status_editor($a, $x, $popup = false) {
 		'$underline' => t('Underline'),
 		'$quote' => t('Quote'),
 		'$code' => t('Code'),
-		'$attach' => t('Attach file'),
+		'$attach' => t('Attach/Upload file'),
 		'$weblink' => $weblink,
 		'$embedPhotos' => $embedPhotos,
 		'$embedPhotosModalTitle' => t('Embed an image from your albums'),
@@ -1438,7 +1444,8 @@ function status_editor($a, $x, $popup = false) {
 		'$expiryModalCANCEL' => t('Cancel'),
 		'$expanded' => ((x($x, 'expanded')) ? $x['expanded'] : false),
 		'$bbcode' => ((x($x, 'bbcode')) ? $x['bbcode'] : false),
-		'$parent' => ((array_key_exists('parent',$x) && $x['parent']) ? $x['parent'] : 0)
+		'$parent' => ((array_key_exists('parent',$x) && $x['parent']) ? $x['parent'] : 0),
+		'$reset' => $reset
 	));
 
 	if ($popup === true) {

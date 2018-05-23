@@ -185,7 +185,8 @@ class Network extends \Zotlabs\Web\Controller {
 				'editor_autocomplete' => true,
 				'bbco_autocomplete' => 'bbcode',
 				'bbcode' => true,
-				'jotnets' => true
+				'jotnets' => true,
+				'reset' => t('Reset form')
 			);
 			if($deftag)
 				$x['pretext'] = $deftag;
@@ -251,7 +252,7 @@ class Network extends \Zotlabs\Web\Controller {
 			);
 			if($r) {
 				$item_thread_top = '';
-				$sql_extra = " AND item.parent IN ( SELECT DISTINCT parent FROM item WHERE true $sql_options AND uid = " . intval(local_channel()) . " AND ( author_xchan = '" . dbesc($r[0]['abook_xchan']) . "' or owner_xchan = '" . dbesc($r[0]['abook_xchan']) . "' ) $item_normal ) ";
+				$sql_extra = " AND item.parent IN ( SELECT DISTINCT parent FROM item WHERE true $sql_options AND uid = " . intval(local_channel()) . " AND ( author_xchan = '" . dbesc($r[0]['abook_xchan']) . "' or owner_xchan = '" . dbesc($r[0]['abook_xchan']) . "' or (body like '" . protect_sprintf('%' . $r[0]['xchan_url'] . '%') . "' and item_thread_top = 1 )) $item_normal ) ";
 				$title = replace_macros(get_markup_template("section_title.tpl"),array(
 					'$title' => '<a href="' . zid($r[0]['xchan_url']) . '" ><img src="' . zid($r[0]['xchan_photo_s'])  . '" alt="' . urlencode($r[0]['xchan_name']) . '" /></a> <a href="' . zid($r[0]['xchan_url']) . '" >' . $r[0]['xchan_name'] . '</a>'
 				));

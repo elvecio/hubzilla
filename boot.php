@@ -50,11 +50,11 @@ require_once('include/attach.php');
 require_once('include/bbcode.php');
 
 define ( 'PLATFORM_NAME',           'hubzilla' );
-define ( 'STD_VERSION',             '3.5.3' );
+define ( 'STD_VERSION',             '3.5.6' );
 define ( 'ZOT_REVISION',            '6.0a' );
 
 
-define ( 'DB_UPDATE_VERSION',       1212 );
+define ( 'DB_UPDATE_VERSION',       1214 );
 
 define ( 'PROJECT_BASE',   __DIR__ );
 
@@ -1559,17 +1559,43 @@ function fix_system_urls($oldurl, $newurl) {
  * @return string Parsed HTML code.
  */
 function login($register = false, $form_id = 'main-login', $hiddens = false, $login_page = true) {
-	$o = '';
-	$reg = false;
-	$reglink = get_config('system', 'register_link');
-	if(! strlen($reglink))
-		$reglink = 'register';
 
-	$reg = array(
-		'title' => t('Create an account to access services and applications'),
-		'desc' => t('Register'),
-		'link' => (($register) ? $reglink : 'pubsites')
-	);
+	$o = '';
+	$reg = null;
+
+	// Here's the current description of how the register link works (2018-05-15)
+
+	// Register links are enabled on the site home page and login page and navbar. 
+	// They are not shown by default on other pages which may require login.
+
+	// If the register link is enabled and registration is closed, the request is directed
+	// to /pubsites. If registration is allowed, /register is the default destination
+
+	// system.register_link can over-ride the default behaviour and redirect to an arbitrary
+	// webpage for paid/custom or organisational registrations, regardless of whether
+	// registration is allowed.
+
+	// system.register_link may or may not be the same destination as system.sellpage
+
+	// system.sellpage is the destination linked from the /pubsites page on other sites. If 
+	// system.sellpage is not set, the 'register' link in /pubsites will go to 'register' on your
+	// site. 
+	
+	// If system.register_link is set to the word 'none', no registration link will be shown on
+	// your site.
+
+
+	$register_policy = get_config('system','register_policy');
+
+	$reglink = get_config('system', 'register_link', z_root() . '/' . ((intval($register_policy) === REGISTER_CLOSED) ? 'pubsites' : 'register'));
+
+	if($reglink !== 'none') {
+		$reg = [
+			'title' => t('Create an account to access services and applications'),
+			'desc'  => t('Register'),
+			'link'  => $reglink
+		];
+	}
 
 	$dest_url = z_root() . '/' . App::$query_string;
 
@@ -2493,8 +2519,8 @@ function check_cron_broken() {
  * @return boolean
  */
 function observer_prohibited($allow_account = false) {
-	if($allow_account)
+	if($allow_account) {
 		return (((get_config('system', 'block_public')) && (! get_account_id()) && (! remote_channel())) ? true : false );
-
+	}
 	return (((get_config('system', 'block_public')) && (! local_channel()) && (! remote_channel())) ? true : false );
 }

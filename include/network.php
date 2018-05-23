@@ -999,7 +999,7 @@ function discover_by_url($url, $arr = null) {
 			return false;
 
 		$network = (($arr['network']) ? $arr['network'] : 'unknown');
-		$name    = (($arr['name']) ? $arr['name'] : 'unknown');
+		$name    = (trim($arr['name']) ? trim($arr['name']) : 'unknown');
 		$photo   = (($arr['photo']) ? $arr['photo'] : '');
 		$addr    = (($arr['addr']) ? $arr['addr'] : '');
 		$guid    = $url;
@@ -1102,6 +1102,9 @@ function discover_by_url($url, $arr = null) {
 
 	if(! $name)
 		$name = notags($feed->get_description());
+
+	if(! trim($name))
+		$name = 'unknown';
 
 	$r = q("select * from xchan where xchan_hash = '%s' limit 1",
 		dbesc($guid)
@@ -1213,7 +1216,7 @@ function webfinger_rfc7033($webbie, $zot = false) {
 	if(strpos($webbie,'@')) {
 		$lhs = substr($webbie,0,strpos($webbie,'@'));
 		$rhs = substr($webbie,strpos($webbie,'@')+1);
-		$resource = 'acct:' . $webbie;
+		$resource = urlencode('acct:' . $webbie);
 	}
 	else {
 		$m = parse_url($webbie);
@@ -1231,7 +1234,7 @@ function webfinger_rfc7033($webbie, $zot = false) {
 
 	$counter = 0;
 	$s = z_fetch_url('https://' . $rhs . '/.well-known/webfinger?f=&resource=' . $resource . (($zot) ? '&zot=1' : ''),
-		false, $counter, [ 'headers' => [ 'Accept: application/jrd+json, */*' ] ]);
+		false, $counter, [ 'headers' => [ 'Accept: application/jrd+json, application/json, */*' ] ]);
 
 	if($s['success']) {
 		$j = json_decode($s['body'], true);
